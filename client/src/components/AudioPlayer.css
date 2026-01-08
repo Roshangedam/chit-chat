@@ -1,0 +1,157 @@
+/* AudioPlayer Component Styles */
+
+.audio-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 20px;
+    min-width: 260px;
+    max-width: 320px;
+}
+
+/* Play/Pause Button */
+.play-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.play-btn:hover {
+    transform: scale(1.05);
+}
+
+.play-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.play-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Audio Content Area */
+.audio-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+/* Progress Container */
+.progress-container {
+    position: relative;
+    height: 32px;
+    cursor: pointer;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Static Waveform */
+.waveform-static {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 100%;
+    padding: 4px 0;
+}
+
+.waveform-bar-static {
+    width: 3px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    transition: background 0.1s;
+    flex-shrink: 0;
+}
+
+.waveform-bar-static.played {
+    background: rgba(99, 102, 241, 0.9);
+}
+
+/* Progress Fill (for seekbar overlay) */
+.progress-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background: transparent;
+    pointer-events: none;
+}
+
+/* Time Display */
+.time-display {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.current-time {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+.separator {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Speed Button */
+.speed-btn {
+    padding: 4px 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.speed-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Received Message Audio Player */
+.message.received .audio-player {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.message.received .play-btn {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+}
+
+.message.received .waveform-bar-static.played {
+    background: var(--accent);
+}

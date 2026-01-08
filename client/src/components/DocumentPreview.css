@@ -1,0 +1,192 @@
+/* DocumentPreview Component Styles */
+
+.document-preview-message {
+    width: 100%;
+    max-width: 300px;
+}
+
+.document-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.document-container:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.document-preview-message.failed .document-container {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* File Icon Wrapper */
+.document-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.document-icon-wrapper .file-icon {
+    font-size: 1.5rem;
+}
+
+.document-icon-wrapper .error-icon {
+    font-size: 1.3rem;
+}
+
+/* Upload Spinner */
+.document-upload-spinner {
+    width: 24px;
+    height: 24px;
+}
+
+.document-upload-spinner .spinner {
+    width: 100%;
+    height: 100%;
+    animation: spin 1s linear infinite;
+}
+
+.document-upload-spinner .spinner circle {
+    stroke: #6366f1;
+    stroke-dasharray: 60;
+    stroke-dashoffset: 15;
+    stroke-linecap: round;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Document Info */
+.document-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.document-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.document-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.document-extension {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.document-size {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Document Action */
+.document-action {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.document-action .download-icon {
+    width: 20px;
+    height: 20px;
+    color: rgba(255, 255, 255, 0.7);
+    transition: color 0.2s;
+}
+
+.document-container:hover .document-action .download-icon {
+    color: #6366f1;
+}
+
+.document-action .upload-progress {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6366f1;
+}
+
+.document-action .retry-icon {
+    font-size: 1.2rem;
+    color: #ef4444;
+}
+
+.document-action .download-spinner {
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+}
+
+.document-action .download-spinner circle {
+    stroke: #6366f1;
+    stroke-dasharray: 60;
+    stroke-dashoffset: 15;
+    stroke-linecap: round;
+}
+
+/* Progress Bar */
+.document-progress-bar {
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.document-progress-bar .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+/* Caption */
+.document-caption {
+    margin: 8px 0 0 0;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+/* Own Message Styling */
+.document-preview-message.own .document-container {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.document-preview-message.own .document-container:hover {
+    background: rgba(255, 255, 255, 0.15);
+}

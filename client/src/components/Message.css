@@ -1,0 +1,506 @@
+/* Message Component Styles */
+
+.message {
+    display: flex;
+    max-width: 65%;
+    position: relative;
+}
+
+.message.sent {
+    align-self: flex-end;
+}
+
+.message.received {
+    align-self: flex-start;
+}
+
+.message-content {
+    padding: 0.75rem 1rem;
+    border-radius: 18px;
+    position: relative;
+    min-width: 80px;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.message.sent .message-content {
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    border-bottom-right-radius: 4px;
+}
+
+.message.received .message-content {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-bottom-left-radius: 4px;
+}
+
+.message-content p {
+    margin: 0;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
+/* Forwarded Tag */
+.forwarded-tag {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 4px;
+    font-style: italic;
+}
+
+.forwarded-tag .forward-icon {
+    font-size: 0.8rem;
+}
+
+/* Replied Message Preview */
+.replied-message {
+    display: flex;
+    gap: 8px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.replied-message:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.replied-bar {
+    width: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.replied-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.replied-sender {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.replied-text {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Message Meta */
+.message-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    justify-content: flex-end;
+}
+
+.message-meta .edited-label {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+}
+
+.message-meta .time {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.message-meta .status {
+    font-size: 0.75rem;
+}
+
+.message-meta .status.sent {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.message-meta .status.delivered {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.message-meta .status.read {
+    color: #60a5fa;
+}
+
+/* Reactions Display */
+.reactions-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+    margin-bottom: 4px;
+}
+
+.reaction-badge {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.reaction-badge:hover {
+    transform: scale(1.1);
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.reaction-badge.my-reaction {
+    background: rgba(99, 102, 241, 0.4);
+    border: 1px solid rgba(99, 102, 241, 0.6);
+}
+
+/* Message Actions (hover menu) */
+.message-actions {
+    position: absolute;
+    top: -40px;
+    display: flex;
+    gap: 4px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
+    padding: 6px 10px;
+    z-index: 10;
+    animation: fadeIn 0.15s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.message-actions.left {
+    right: 0;
+}
+
+.message-actions.right {
+    left: 0;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.action-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    transition: transform 0.1s, background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.action-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.action-btn:hover {
+    transform: scale(1.2);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.action-btn.active {
+    background: rgba(99, 102, 241, 0.3);
+}
+
+.action-btn.reply-btn {
+    border-right: 1px solid var(--border-glass);
+    padding-right: 10px;
+    margin-right: 4px;
+}
+
+.action-btn.reaction-btn {
+    font-size: 1.1rem;
+}
+
+/* Deleted Message Styles */
+.message.deleted .deleted-content {
+    opacity: 0.7;
+    font-style: italic;
+}
+
+.message.deleted .deleted-text {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.action-btn.delete-btn {
+    color: #f59e0b;
+}
+
+.action-btn.delete-all-btn {
+    color: #ef4444;
+}
+
+/* Pinned Message Styles */
+.message.pinned .message-content {
+    border-left: 3px solid #f59e0b;
+}
+
+.pinned-tag {
+    font-size: 0.7rem;
+    color: #f59e0b;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.action-btn.pin-btn {
+    color: #9ca3af;
+}
+
+.action-btn.pin-btn.pinned {
+    color: #f59e0b;
+}
+
+/* GIF Message Styles */
+.message-gif {
+    max-width: 250px;
+    max-height: 200px;
+    border-radius: 8px;
+    display: block;
+}
+
+.message-sticker {
+    font-size: 4rem;
+    display: block;
+    line-height: 1;
+}
+
+/* Image Message Styles */
+.message-image-container {
+    position: relative;
+    max-width: 300px;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.message-image {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s;
+}
+
+.message-image:hover {
+    transform: scale(1.02);
+}
+
+.image-actions {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.message-image-container:hover .image-actions {
+    opacity: 1;
+}
+
+.download-btn {
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.download-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* Video Message Styles */
+.message-video-container {
+    position: relative;
+    max-width: 350px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+}
+
+.message-video {
+    width: 100%;
+    max-height: 300px;
+    display: block;
+    border-radius: 12px;
+}
+
+.video-actions {
+    position: absolute;
+    bottom: 45px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.message-video-container:hover .video-actions {
+    opacity: 1;
+}
+
+/* Media Caption */
+.media-caption {
+    margin: 8px 0 0 0;
+    padding: 0;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    word-wrap: break-word;
+    line-height: 1.4;
+}
+
+/* Image Loading Placeholder */
+.image-loading-placeholder,
+.image-error-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 200px;
+    min-height: 120px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    gap: 8px;
+}
+
+.loading-spinner {
+    font-size: 24px;
+    animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.error-icon {
+    font-size: 32px;
+    opacity: 0.6;
+}
+
+.message-image.loading {
+    opacity: 0;
+    position: absolute;
+}
+
+/* Upload Progress Styles */
+.message-image-container.uploading,
+.message-video-container.uploading {
+    position: relative;
+}
+
+.message-image-container.uploading .message-image,
+.message-video-container.uploading .message-video {
+    filter: brightness(0.5);
+}
+
+.upload-progress-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+.progress-ring {
+    width: 60px;
+    height: 60px;
+    transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.2);
+    stroke-width: 4;
+}
+
+.progress-ring-fill {
+    fill: none;
+    stroke: #6366f1;
+    stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s ease;
+}
+
+.upload-progress-overlay .progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+}
+
+.upload-failed-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 16px 24px;
+    border-radius: 12px;
+    z-index: 5;
+}
+
+.upload-failed-overlay .failed-icon {
+    font-size: 28px;
+}
+
+.upload-failed-overlay span {
+    color: #f87171;
+    font-size: 13px;
+    font-weight: 500;
+}

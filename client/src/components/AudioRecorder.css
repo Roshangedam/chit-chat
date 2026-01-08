@@ -1,0 +1,266 @@
+/* AudioRecorder Component Styles */
+
+.audio-recorder {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 50px;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 25px;
+    padding: 8px 16px;
+    box-sizing: border-box;
+    overflow: visible;
+}
+
+/* Recording Controls */
+.recording-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow: visible;
+}
+
+.record-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.record-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.record-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* Cancel Recording Button */
+.cancel-recording-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.cancel-recording-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+.cancel-recording-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Waveform Container */
+.waveform-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 40px;
+    padding: 0 8px;
+}
+
+.waveform-bar {
+    width: 4px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 2px;
+    transition: height 0.1s ease;
+    min-height: 4px;
+}
+
+/* Recording Timer */
+.recording-timer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #ef4444;
+    min-width: 55px;
+}
+
+.recording-dot {
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* Stop Button */
+.stop-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #ef4444;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.stop-btn:hover {
+    background: #dc2626;
+    transform: scale(1.05);
+}
+
+.stop-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Preview Controls */
+.preview-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow: visible;
+}
+
+.delete-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.delete-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+}
+
+.delete-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.audio-preview {
+    flex: 1;
+    height: 36px;
+    border-radius: 8px;
+    min-width: 150px;
+}
+
+.audio-preview::-webkit-media-controls-panel {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.duration-label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    min-width: 40px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.audio-recorder .send-btn {
+    width: 64px;
+    height: 58px;
+    min-width: 59px;
+    max-width: 64px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    flex-grow: 0;
+}
+
+.audio-recorder .send-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+.audio-recorder .send-btn svg {
+    width: 33px;
+    height: 48px;
+    display: block;
+    fill: white !important;
+}
+
+.audio-recorder .send-btn svg path {
+    fill: white !important;
+}
+
+/* Error State */
+.recorder-error {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #ef4444;
+    font-size: 14px;
+    width: 100%;
+}
+
+.error-icon {
+    font-size: 18px;
+}
+
+.recorder-error .cancel-btn {
+    margin-left: auto;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.recorder-error .cancel-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
