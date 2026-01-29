@@ -1,0 +1,237 @@
+/* About Settings Styles */
+
+.about-settings {
+    width: 100%;
+    max-width: 600px;
+}
+
+/* App Info Card */
+.about-card.app-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 16px;
+    margin-bottom: 24px;
+}
+
+.app-logo {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.logo-icon {
+    font-size: 2rem;
+}
+
+.app-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.app-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.app-version {
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.app-tagline {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Section */
+.about-section {
+    margin-bottom: 24px;
+}
+
+.about-section h4 {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Status Card */
+.status-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-glass);
+    border-radius: 12px;
+    border: 1px solid var(--border-glass);
+}
+
+.status-card svg {
+    color: var(--text-muted);
+}
+
+.status-label {
+    flex: 1;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.status-indicator.connected {
+    color: var(--success);
+}
+
+.status-indicator.disconnected {
+    color: #ef4444;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Features List */
+.features-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--bg-glass);
+    border-radius: 10px;
+    border: 1px solid var(--border-glass);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.feature-emoji {
+    font-size: 1.1rem;
+}
+
+/* Credits Card */
+.credits-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-glass);
+    border-radius: 12px;
+    border: 1px solid var(--border-glass);
+}
+
+.credit-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.credit-row svg {
+    color: var(--accent);
+}
+
+.credit-row .heart-icon {
+    color: #ec4899;
+}
+
+/* Tech Badges */
+.tech-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tech-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.tech-badge.react {
+    background: rgba(97, 218, 251, 0.15);
+    color: #61dafb;
+}
+
+.tech-badge.node {
+    background: rgba(104, 160, 99, 0.15);
+    color: #68a063;
+}
+
+.tech-badge.socket {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.tech-badge.sqlite {
+    background: rgba(0, 122, 204, 0.15);
+    color: #007acc;
+}
+
+.tech-badge.vite {
+    background: rgba(189, 52, 254, 0.15);
+    color: #bd34fe;
+}
+
+/* Footer */
+.about-footer {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-glass);
+    text-align: center;
+}
+
+.about-footer p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.footer-note {
+    margin-top: 4px !important;
+    font-size: 0.75rem !important;
+    opacity: 0.7;
+}

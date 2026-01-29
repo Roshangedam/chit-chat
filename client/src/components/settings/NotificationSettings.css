@@ -1,0 +1,234 @@
+/* Notification Settings Styles (for Settings Panel) */
+
+.notification-settings {
+    width: 100%;
+    max-width: 600px;
+}
+
+/* Section Header */
+.notif-section {
+    margin-bottom: 24px;
+}
+
+.notif-section h4 {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Permission Box */
+.permission-box {
+    padding: 16px;
+    background: var(--bg-glass);
+    border-radius: 12px;
+    border: 1px solid var(--border-glass);
+}
+
+.permission-status {
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.permission-status.granted {
+    color: var(--success);
+}
+
+.permission-status.denied {
+    color: #ef4444;
+}
+
+.permission-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.permission-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* Settings List */
+.notif-settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Setting Row */
+.notif-setting-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg-glass);
+    border-radius: 12px;
+    border: 1px solid var(--border-glass);
+    transition: background 0.2s ease;
+}
+
+.notif-setting-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.setting-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 10px;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+.setting-icon.dnd {
+    background: rgba(139, 92, 246, 0.1);
+    color: #a78bfa;
+}
+
+.setting-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.setting-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.setting-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-track {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 13px;
+    transition: all 0.3s ease;
+}
+
+.toggle-track::before {
+    content: '';
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.toggle-switch input:checked+.toggle-track {
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+}
+
+.toggle-switch input:checked+.toggle-track::before {
+    transform: translateX(22px);
+}
+
+/* Volume Control */
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-left: 56px;
+    background: rgba(99, 102, 241, 0.05);
+    border-radius: 10px;
+    margin-top: -4px;
+}
+
+.volume-label {
+    font-size: 1.1rem;
+}
+
+.volume-range {
+    flex: 1;
+    appearance: none;
+    -webkit-appearance: none;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+}
+
+.volume-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.volume-value {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    min-width: 40px;
+    text-align: right;
+}
+
+.test-sound-btn {
+    padding: 6px 14px;
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--accent);
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.test-sound-btn:hover {
+    background: rgba(99, 102, 241, 0.25);
+}
+
+/* DND Warning */
+.dnd-warning {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    margin-top: 16px;
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 10px;
+    color: #a78bfa;
+    font-size: 0.85rem;
+}

@@ -1,25 +1,33 @@
 /**
  * Socket.io Server Setup
- * Handles real-time WebSocket connections
+ * Everything allowed - no restrictions
  */
 
 const { Server } = require('socket.io');
 const { findOrCreateUser, updateUserStatus, getAllUsers, getAllUsersWithLastChat } = require('../db/userQueries');
-const { getUnreadMessages, markMessagesDelivered, getMessagesBetweenUsers } = require('../db/messageQueries');
+const { getUnreadMessages, getUnreadCountsBySender, markMessagesDelivered, getMessagesBetweenUsers } = require('../db/messageQueries');
 const { addUserSocket, removeUserSocket, getAllOnlineUsers, getUserSockets, isUserOnline } = require('./onlineUsers');
 const { registerUserHandlers } = require('./handlers/userHandler');
 const { registerMessageHandlers } = require('./handlers/messageHandler');
 const { registerReactionHandlers } = require('./handlers/reactionHandler');
+const pushService = require('../services/pushService');
 
 /**
  * Initialize Socket.io with the HTTP server
  */
 function initializeSocket(server) {
     const io = new Server(server, {
+        // ALLOW EVERYTHING
         cors: {
-            origin: true,
+            origin: '*',
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+            allowedHeaders: ['*'],
             credentials: true
-        }
+        },
+        // Allow all transports
+        transports: ['websocket', 'polling'],
+        // No restrictions
+        allowEIO3: true
     });
 
     // Connection handler
@@ -48,23 +56,24 @@ function initializeSocket(server) {
         const allDbUsers = getAllUsersWithLastChat(clientIP);
         const onlineUserIds = getAllOnlineUsers().map(u => u.id);
 
+        // Get unread counts per sender for this user
+        const unreadCounts = getUnreadCountsBySender(clientIP);
+
         const allUsers = allDbUsers.map(u => ({
             ...u,
-            status: onlineUserIds.includes(u.id) ? 'online' : 'offline'
+            status: onlineUserIds.includes(u.id) ? 'online' : 'offline',
+            unreadCount: unreadCounts[u.id] || 0  // Include unread count from DB
         }));
 
         // Send list of all users
         socket.emit('users:list', { users: allUsers });
         console.log(`  📋 Sent users list (${allUsers.length} total, ${onlineUserIds.length} online)`);
 
-        // =============================================
         // Deliver pending messages to this user
-        // =============================================
         const unreadMessages = getUnreadMessages(clientIP);
         if (unreadMessages.length > 0) {
-            console.log(`  � Delivering ${unreadMessages.length} pending messages`);
+            console.log(`  📬 Delivering ${unreadMessages.length} pending messages`);
 
-            // Group messages by sender
             const messagesBySender = {};
             unreadMessages.forEach(msg => {
                 if (!messagesBySender[msg.sender_id]) {
@@ -73,12 +82,9 @@ function initializeSocket(server) {
                 messagesBySender[msg.sender_id].push(msg);
             });
 
-            // Deliver messages and notify senders
             Object.entries(messagesBySender).forEach(([senderId, messages]) => {
-                // Mark as delivered in DB
                 markMessagesDelivered(senderId, clientIP);
 
-                // Notify sender if online
                 if (isUserOnline(senderId)) {
                     const senderSockets = getUserSockets(senderId);
                     senderSockets.forEach(socketId => {
@@ -89,16 +95,12 @@ function initializeSocket(server) {
                             });
                         });
                     });
-                    console.log(`    → Notified ${senderId} about delivery`);
                 }
             });
         }
 
-        // =============================================
-        // Broadcast user online status to ALL clients
-        // =============================================
+        // Broadcast user online status
         if (isNewUser) {
-            // Broadcast to everyone that this user is online
             io.emit('user:online', {
                 user: { ...user, status: 'online' },
                 id: clientIP
@@ -111,6 +113,27 @@ function initializeSocket(server) {
         registerMessageHandlers(socket, io);
         registerReactionHandlers(socket, io);
 
+        // Push notification handlers
+        socket.on('push:getVapidKey', (callback) => {
+            if (typeof callback === 'function') {
+                callback({ vapidPublicKey: pushService.getVapidPublicKey() });
+            }
+        });
+
+        socket.on('push:subscribe', (data, callback) => {
+            pushService.saveSubscription(clientIP, data.subscription);
+            if (typeof callback === 'function') {
+                callback({ success: true });
+            }
+        });
+
+        socket.on('push:unsubscribe', (callback) => {
+            pushService.removeSubscription(clientIP);
+            if (typeof callback === 'function') {
+                callback({ success: true });
+            }
+        });
+
         // Handle disconnection
         socket.on('disconnect', (reason) => {
             console.log(`\n👋 User disconnecting: ${clientIP} (${reason})`);
@@ -121,7 +144,6 @@ function initializeSocket(server) {
                 updateUserStatus(clientIP, 'offline');
                 const lastSeen = new Date().toISOString();
 
-                // Broadcast to ALL clients
                 io.emit('user:offline', {
                     id: clientIP,
                     name: user.name,
@@ -139,7 +161,7 @@ function initializeSocket(server) {
         });
     });
 
-    console.log('🔌 Socket.io initialized');
+    console.log('🔌 Socket.io initialized (all origins allowed)');
     return io;
 }
 

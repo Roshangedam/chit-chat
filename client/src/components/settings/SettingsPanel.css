@@ -1,0 +1,175 @@
+/* Settings Panel Styles */
+
+.main-settings-panel {
+    flex: 1;
+    display: flex;
+    height: 100vh;
+    background: var(--bg-secondary);
+    overflow: hidden;
+}
+
+/* Settings Sidebar */
+.main-settings-sidebar {
+    width: 280px;
+    min-width: 280px;
+    height: 100%;
+    background: var(--bg-dark);
+    border-right: 1px solid var(--border-glass);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.settings-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-glass);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.settings-back-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-glass);
+    border: none;
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.settings-back-btn:hover {
+    background: var(--accent);
+}
+
+.settings-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* Category List */
+.settings-categories {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+}
+
+/* Thin scrollbar for categories */
+.settings-categories::-webkit-scrollbar {
+    width: 4px;
+}
+
+.settings-categories::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.settings-categories::-webkit-scrollbar-thumb {
+    background: var(--border-glass);
+    border-radius: 2px;
+}
+
+.settings-categories::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    font-size: 0.95rem;
+}
+
+.category-item:hover {
+    background: var(--bg-glass);
+    color: var(--text-primary);
+}
+
+.category-item.active {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--accent);
+}
+
+.category-item svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.category-item .category-label {
+    flex: 1;
+}
+
+.category-item .lock-badge {
+    font-size: 12px;
+    opacity: 0.5;
+}
+
+.category-item.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.category-item.locked:hover {
+    background: transparent;
+    color: var(--text-muted);
+}
+
+/* Settings Content */
+.main-settings-content {
+    flex: 1;
+    padding: 32px 48px;
+    overflow-y: auto;
+    background: var(--bg-secondary);
+    height: 100%;
+}
+
+/* Thin scrollbar for content */
+.main-settings-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.main-settings-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.main-settings-content::-webkit-scrollbar-thumb {
+    background: var(--border-glass);
+    border-radius: 3px;
+}
+
+.main-settings-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Section Title */
+.settings-section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.settings-section-title svg {
+    width: 28px;
+    height: 28px;
+    color: var(--accent);
+}

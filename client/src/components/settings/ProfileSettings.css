@@ -1,0 +1,317 @@
+/* Profile Settings Styles */
+
+.profile-settings {
+    width: 100%;
+}
+
+/* Profile Photo Section */
+.profile-photo-section {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 32px;
+    padding: 24px;
+    background: var(--bg-glass);
+    border-radius: 16px;
+    border: 1px solid var(--border-glass);
+    max-width: 600px;
+}
+
+.profile-photo-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    border: 3px solid var(--accent);
+    flex-shrink: 0;
+}
+
+.profile-photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-photo-preview .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 36px;
+    font-weight: 600;
+}
+
+.photo-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.photo-actions h4 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.photo-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.photo-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.photo-btn.upload {
+    background: var(--accent);
+    color: white;
+}
+
+.photo-btn.upload:hover {
+    opacity: 0.9;
+}
+
+.photo-btn.remove {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.photo-btn.remove:hover {
+    background: rgba(239, 68, 68, 0.25);
+}
+
+.photo-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Form Fields */
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 600px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group label svg {
+    width: 16px;
+    height: 16px;
+}
+
+.form-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    padding-right: 80px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.form-input::placeholder {
+    color: var(--text-muted);
+}
+
+.char-count {
+    position: absolute;
+    right: 12px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.char-count.warning {
+    color: #f59e0b;
+}
+
+.char-count.limit {
+    color: #ef4444;
+}
+
+/* Status Dropdown */
+.status-select {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 18px;
+}
+
+.status-select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.status-select option {
+    background: var(--bg-dark);
+    color: var(--text-primary);
+}
+
+/* Bio Textarea */
+.form-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 12px 16px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* Save Button */
+.save-section {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-glass);
+}
+
+.save-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.save-btn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.save-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.save-btn.saving {
+    background: var(--text-muted);
+}
+
+/* Hidden file input */
+.hidden-input {
+    display: none;
+}
+
+/* Success message */
+.save-success {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--success);
+    font-size: 0.9rem;
+}
+
+/* Account Info Section */
+.account-info-section {
+    margin-top: 24px;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: var(--bg-glass);
+    border-radius: 16px;
+    border: 1px solid var(--border-glass);
+    max-width: 600px;
+}
+
+.account-info-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.account-info-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.account-info-grid .info-row {
+    flex: 1 1 0;
+    min-width: 120px;
+}
+
+.info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.info-row .info-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.info-row .info-value {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-family: 'Fira Code', 'Monaco', monospace;
+}

@@ -42,6 +42,9 @@ function initializeSchema() {
   try {
     db.exec(`ALTER TABLE users ADD COLUMN custom_name TEXT`);
   } catch (e) { /* Column exists */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN bio TEXT`);
+  } catch (e) { /* Column exists */ }
 
   console.log('  ✓ Users table ready');
 

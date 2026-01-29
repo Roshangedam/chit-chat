@@ -1,0 +1,177 @@
+/* Sidebar Component Styles */
+
+.sidebar {
+    width: 60px;
+    min-width: 60px;
+    height: 100vh;
+    background: var(--bg-dark);
+    border-right: 1px solid var(--border-glass);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 8px;
+}
+
+/* Sidebar Navigation Icons */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+}
+
+.sidebar-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+    position: relative;
+    background: transparent;
+    border: none;
+}
+
+.sidebar-icon:hover {
+    background: var(--bg-glass);
+    color: var(--text-primary);
+}
+
+.sidebar-icon.active {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--accent);
+}
+
+.sidebar-icon.active::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 24px;
+    background: var(--accent);
+    border-radius: 0 4px 4px 0;
+}
+
+.sidebar-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* Disabled state for coming soon */
+.sidebar-icon.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.sidebar-icon.disabled:hover {
+    background: transparent;
+    color: var(--text-muted);
+}
+
+/* Tooltip */
+.sidebar-icon .tooltip {
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-icon:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+    left: 65px;
+}
+
+.tooltip-badge {
+    font-size: 10px;
+    background: var(--accent);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+}
+
+/* Spacer to push avatar to bottom */
+.sidebar-spacer {
+    flex: 1;
+}
+
+/* User Avatar at bottom - wrapper for UserAvatar component */
+.sidebar-user {
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.sidebar-user:hover {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+/* Legacy sidebar-avatar styles (kept for backwards compatibility) */
+.sidebar-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+.sidebar-avatar:hover {
+    border-color: var(--accent);
+}
+
+.sidebar-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sidebar-avatar .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* Online status dot on avatar */
+.sidebar-avatar .status-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--success);
+    border: 2px solid var(--bg-dark);
+}
+
+.sidebar-avatar .status-dot.offline {
+    background: var(--text-muted);
+}

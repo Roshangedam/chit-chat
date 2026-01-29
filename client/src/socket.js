@@ -7,9 +7,15 @@ import { io } from 'socket.io-client';
 import useUserStore from './store/userStore';
 import usePeerStore from './store/peerStore';
 import useMessageStore from './store/messageStore';
+import config from './config';
+import { updateFaviconBadge } from './utils/faviconBadge';
+import { notifyNewMessage, initializeNotifications } from './utils/notificationManager';
 
-// Server URL - Use LAN IP for network access
-const SERVER_URL = 'http://192.168.0.71:3000';
+// Initialize notification system
+initializeNotifications();
+
+// Server URL - Auto-detect protocol (HTTP/HTTPS)
+const SERVER_URL = config.serverUrl;
 
 // Create socket connection
 const socket = io(SERVER_URL, {
@@ -58,11 +64,40 @@ socket.on('user:identified', (data) => {
 // Peer/User List Events
 // ==========================================
 
+/**
+ * Update browser tab title and favicon with unread count
+ * Works in Browser. Electron can use getTotalUnread() for app badge.
+ */
+function updateBrowserTitle() {
+    const totalUnread = usePeerStore.getState().getTotalUnread();
+    const baseTitle = 'ChitChat';
+
+    // Update document title
+    if (totalUnread > 0) {
+        document.title = `(${totalUnread}) ${baseTitle}`;
+    } else {
+        document.title = baseTitle;
+    }
+
+    // Update favicon badge
+    updateFaviconBadge(totalUnread);
+
+    // Dispatch custom event for Electron/Mobile to listen
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unread-count-changed', {
+            detail: { count: totalUnread }
+        }));
+    }
+}
+
 socket.on('users:list', (data) => {
     console.log('📋 Received users list:', data.users.length, 'users');
     const currentUser = useUserStore.getState().currentUser;
     const peers = data.users.filter(u => u.id !== currentUser?.id);
     usePeerStore.getState().setPeers(peers);
+
+    // Update browser title with total unread
+    updateBrowserTitle();
 });
 
 // User came online - update their status
@@ -128,12 +163,37 @@ socket.on('message:new', (data) => {
     // Move sender to top of chat list with last message preview and type
     usePeerStore.getState().movePeerToTop(data.senderId, message.content, data.senderId, message.type || 'text');
 
-    // Auto send read receipt if chat is open with this sender
+    // Check if chat is open with this sender AND tab is focused
     const selectedPeer = usePeerStore.getState().selectedPeer;
-    if (selectedPeer?.id === data.senderId && document.hasFocus()) {
+    const isChatOpenWithSender = selectedPeer?.id === data.senderId && document.hasFocus();
+
+    if (isChatOpenWithSender) {
+        // Auto send read receipt if chat is open and focused
         socket.emit('message:read', {
             senderId: data.senderId,
             messageIds: [data.message.id]
+        });
+    } else {
+        // Increment unread count if chat is not open
+        usePeerStore.getState().incrementUnread(data.senderId);
+        // Update browser title with new unread count
+        updateBrowserTitle();
+    }
+
+    // Always show notification if not actively chatting with sender
+    if (!isChatOpenWithSender) {
+        const sender = usePeerStore.getState().peers.find(p => p.id === data.senderId);
+        notifyNewMessage({
+            senderId: data.senderId,
+            senderName: sender?.name || data.senderId,
+            message: message,
+            onNavigate: (senderId) => {
+                // This will be called when notification is clicked
+                const peer = usePeerStore.getState().peers.find(p => p.id === senderId);
+                if (peer) {
+                    usePeerStore.getState().selectPeer(peer);
+                }
+            }
         });
     }
 });

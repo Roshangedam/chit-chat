@@ -11,6 +11,8 @@ import MessageInput from './MessageInput';
 import Message from './Message';
 import ForwardModal from './ForwardModal';
 import MediaGallery from './MediaGallery';
+import UserAvatar from './UserAvatar';
+import ProfileInfoModal from './ProfileInfoModal';
 import socket from '../socket';
 import './ChatWindow.css';
 
@@ -51,6 +53,9 @@ function ChatWindow() {
 
     // Media gallery state
     const [showMediaGallery, setShowMediaGallery] = useState(false);
+
+    // Profile info modal state
+    const [showProfileModal, setShowProfileModal] = useState(false);
 
     // Show Go to Recent button
     const [showGoToRecent, setShowGoToRecent] = useState(false);
@@ -431,10 +436,7 @@ function ChatWindow() {
         <div className="chat-window">
             {/* Header */}
             <div className="chat-header">
-                <div className="peer-avatar">
-                    {selectedPeer.name?.[0]?.toUpperCase() || '?'}
-                    <span className={`status-dot ${selectedPeer.status}`}></span>
-                </div>
+                <UserAvatar user={selectedPeer} size="medium" showStatus={true} onClick={() => setShowProfileModal(true)} />
                 <div className="peer-details">
                     <span className="peer-name">{selectedPeer.name}</span>
                     <span className={`peer-status ${isTyping ? 'typing' : ''}`}>
@@ -620,6 +622,15 @@ function ChatWindow() {
                 <MediaGallery
                     peerId={selectedPeer.id}
                     onClose={() => setShowMediaGallery(false)}
+                />
+            )}
+
+            {/* Profile Info Modal */}
+            {showProfileModal && (
+                <ProfileInfoModal
+                    user={selectedPeer}
+                    onClose={() => setShowProfileModal(false)}
+                    onSelectPeer={() => { }}
                 />
             )}
         </div>

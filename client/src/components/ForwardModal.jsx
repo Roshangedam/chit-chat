@@ -8,6 +8,7 @@ import usePeerStore from '../store/peerStore';
 import useMessageStore from '../store/messageStore';
 import useUserStore from '../store/userStore';
 import socket from '../socket';
+import UserAvatar from './UserAvatar';
 import './ForwardModal.css';
 
 function ForwardModal({ message, onClose }) {
@@ -108,10 +109,7 @@ function ForwardModal({ message, onClose }) {
                                 className={`peer-item ${selectedPeers.includes(peer.id) ? 'selected' : ''}`}
                                 onClick={() => togglePeer(peer.id)}
                             >
-                                <div className="peer-avatar">
-                                    {peer.name?.[0]?.toUpperCase() || '?'}
-                                    <span className={`status-dot ${peer.status}`}></span>
-                                </div>
+                                <UserAvatar user={peer} size="small" showStatus={true} />
                                 <span className="peer-name">{peer.name}</span>
                                 <span className="peer-check">
                                     {selectedPeers.includes(peer.id) ? '✓' : ''}

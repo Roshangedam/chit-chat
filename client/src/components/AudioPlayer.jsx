@@ -18,7 +18,7 @@ function AudioPlayer({ src, duration: initialDuration }) {
 
     // Format time as MM:SS
     const formatTime = (seconds) => {
-        if (!seconds || isNaN(seconds)) return '0:00';
+        if (!seconds || isNaN(seconds) || !isFinite(seconds)) return '0:00';
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -62,13 +62,27 @@ function AudioPlayer({ src, duration: initialDuration }) {
         const audio = audioRef.current;
         if (!audio) return;
 
+        const updateDuration = () => {
+            if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
+                setDuration(audio.duration);
+                setIsLoading(false);
+            }
+        };
+
         const handleLoadedMetadata = () => {
-            setDuration(audio.duration);
-            setIsLoading(false);
+            updateDuration();
+        };
+
+        const handleDurationChange = () => {
+            updateDuration();
         };
 
         const handleTimeUpdate = () => {
             setCurrentTime(audio.currentTime);
+            // Fallback: try to get duration during playback
+            if (duration === 0) {
+                updateDuration();
+            }
         };
 
         const handleEnded = () => {
@@ -78,26 +92,38 @@ function AudioPlayer({ src, duration: initialDuration }) {
 
         const handleCanPlay = () => {
             setIsLoading(false);
+            updateDuration();
         };
 
+        const handleCanPlayThrough = () => {
+            updateDuration();
+        };
+
+        // Force load metadata
+        audio.load();
+
         audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+        audio.addEventListener('durationchange', handleDurationChange);
         audio.addEventListener('timeupdate', handleTimeUpdate);
         audio.addEventListener('ended', handleEnded);
         audio.addEventListener('canplay', handleCanPlay);
+        audio.addEventListener('canplaythrough', handleCanPlayThrough);
 
         return () => {
             audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            audio.removeEventListener('durationchange', handleDurationChange);
             audio.removeEventListener('timeupdate', handleTimeUpdate);
             audio.removeEventListener('ended', handleEnded);
             audio.removeEventListener('canplay', handleCanPlay);
+            audio.removeEventListener('canplaythrough', handleCanPlayThrough);
         };
-    }, []);
+    }, [duration]);
 
     const progress = duration ? (currentTime / duration) * 100 : 0;
 
     return (
         <div className="audio-player">
-            <audio ref={audioRef} src={src} preload="metadata" />
+            <audio ref={audioRef} src={src} preload="auto" />
 
             {/* Play/Pause Button */}
             <button className="play-btn" onClick={togglePlay} disabled={isLoading}>

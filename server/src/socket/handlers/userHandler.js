@@ -35,15 +35,46 @@ function registerUserHandlers(socket, io) {
         console.log(`  ✓ Name updated and broadcasted`);
     });
 
-    // Handle user updating profile
+    // Handle user updating profile (name, status message, bio)
     socket.on('user:updateProfile', (data) => {
-        console.log(`📝 ${clientIP} updating profile`);
+        console.log(`📝 ${clientIP} updating profile`, data);
 
-        const user = findUserByIP(clientIP);
-        if (user) {
-            // Update and broadcast
-            socket.emit('user:updated', { user });
-            socket.broadcast.emit('user:updated', { user });
+        const { updateUserProfile } = require('../../db/userQueries');
+
+        const profile = {};
+        if (data.name !== undefined) profile.name = data.name;
+        if (data.statusMessage !== undefined) profile.statusMessage = data.statusMessage;
+        if (data.bio !== undefined) profile.bio = data.bio;
+
+        const updatedUser = updateUserProfile(clientIP, profile);
+
+        if (updatedUser) {
+            // Update online user info
+            if (profile.name) {
+                updateOnlineUser(clientIP, { name: profile.name });
+            }
+
+            // Emit to self and broadcast to all
+            socket.emit('user:updated', { user: updatedUser });
+            socket.broadcast.emit('user:updated', { user: updatedUser });
+
+            console.log(`  ✓ Profile updated and broadcasted`);
+        }
+    });
+
+    // Handle avatar update after upload
+    socket.on('user:updateAvatar', (data) => {
+        console.log(`🖼️ ${clientIP} updating avatar`);
+
+        const { updateUserAvatar } = require('../../db/userQueries');
+
+        const updatedUser = updateUserAvatar(clientIP, data.avatarPath);
+
+        if (updatedUser) {
+            socket.emit('user:updated', { user: updatedUser });
+            socket.broadcast.emit('user:updated', { user: updatedUser });
+
+            console.log(`  ✓ Avatar updated and broadcasted`);
         }
     });
 

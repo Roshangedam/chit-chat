@@ -192,6 +192,54 @@ function getDisplayName(user) {
   return user.custom_name || defaultName;
 }
 
+/**
+ * Update user's full profile
+ * @param {string} userId - User's IP address
+ * @param {Object} profile - Profile data { name, statusMessage, bio }
+ * @returns {Object} - Updated user object
+ */
+function updateUserProfile(userId, profile) {
+  const updates = [];
+  const values = [];
+
+  if (profile.name !== undefined) {
+    updates.push('name = ?', 'custom_name = ?');
+    values.push(profile.name, profile.name);
+  }
+
+  if (profile.statusMessage !== undefined) {
+    updates.push('status_message = ?');
+    values.push(profile.statusMessage);
+  }
+
+  if (profile.bio !== undefined) {
+    updates.push('bio = ?');
+    values.push(profile.bio);
+  }
+
+  if (updates.length === 0) {
+    return findUserByIP(userId);
+  }
+
+  values.push(userId);
+  const stmt = db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`);
+  stmt.run(...values);
+
+  return findUserByIP(userId);
+}
+
+/**
+ * Update user's avatar
+ * @param {string} userId - User's IP address
+ * @param {string} avatarPath - Path to avatar image
+ * @returns {Object} - Updated user object
+ */
+function updateUserAvatar(userId, avatarPath) {
+  const stmt = db.prepare('UPDATE users SET avatar = ? WHERE id = ?');
+  stmt.run(avatarPath, userId);
+  return findUserByIP(userId);
+}
+
 module.exports = {
   findUserByIP,
   createUser,
@@ -200,8 +248,11 @@ module.exports = {
   updateUserStatus,
   updateUserHostname,
   updateUserCustomName,
+  updateUserProfile,
+  updateUserAvatar,
   getDisplayName,
   getOnlineUsers,
   getAllUsers,
   getAllUsersWithLastChat
 };
+

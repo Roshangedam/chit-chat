@@ -5,14 +5,28 @@
 import { useState, useEffect } from 'react';
 import socket from './socket';
 import useUserStore from './store/userStore';
+import Sidebar from './components/Sidebar';
 import PeerList from './components/PeerList';
 import ChatWindow from './components/ChatWindow';
+import SettingsPanel from './components/settings/SettingsPanel';
+import { ToastContainer } from './components/Toast';
+import NotificationPermission from './components/NotificationPermission';
 import './App.css';
 
 function App() {
     const { currentUser, isLoading } = useUserStore();
     const [isConnected, setIsConnected] = useState(socket.connected);
     const [connectionError, setConnectionError] = useState(null);
+    const [activeTab, setActiveTab] = useState('chats'); // 'chats' | 'settings'
+    const [settingsCategory, setSettingsCategory] = useState('profile');
+
+    // Handle tab change with optional settings category
+    const handleTabChange = (tab, category = null) => {
+        setActiveTab(tab);
+        if (tab === 'settings' && category) {
+            setSettingsCategory(category);
+        }
+    };
 
     useEffect(() => {
         function onConnect() {
@@ -77,12 +91,27 @@ function App() {
         );
     }
 
+    // Render content based on active tab
+    const renderContent = () => {
+        switch (activeTab) {
+            case 'settings':
+                return <SettingsPanel onBack={() => setActiveTab('chats')} initialCategory={settingsCategory} />;
+            case 'chats':
+            default:
+                return <PeerList />;
+        }
+    };
+
     return (
         <div className="app chat-app">
-            <PeerList />
-            <ChatWindow />
+            <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
+            {renderContent()}
+            {activeTab === 'chats' && <ChatWindow />}
+            <ToastContainer />
+            <NotificationPermission />
         </div>
     );
 }
 
 export default App;
+

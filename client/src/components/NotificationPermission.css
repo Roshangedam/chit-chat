@@ -1,0 +1,136 @@
+/* Notification Permission Banner */
+
+.notification-permission-banner {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(168, 85, 247, 0.95));
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
+    z-index: 10000;
+    animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 90%;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.permission-icon {
+    font-size: 2rem;
+    animation: ring 2s ease-in-out infinite;
+}
+
+@keyframes ring {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    10%,
+    30% {
+        transform: rotate(-10deg);
+    }
+
+    20%,
+    40% {
+        transform: rotate(10deg);
+    }
+
+    50% {
+        transform: rotate(0deg);
+    }
+}
+
+.permission-content {
+    flex: 1;
+}
+
+.permission-content h4 {
+    margin: 0 0 4px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+}
+
+.permission-content p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.permission-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.permission-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.permission-btn.enable {
+    background: white;
+    color: #6366f1;
+}
+
+.permission-btn.enable:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateY(-1px);
+}
+
+.permission-btn.enable:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.permission-btn.later {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.permission-btn.later:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+    .notification-permission-banner {
+        flex-direction: column;
+        text-align: center;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        transform: none;
+        max-width: none;
+    }
+
+    .permission-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .permission-btn {
+        flex: 1;
+    }
+}

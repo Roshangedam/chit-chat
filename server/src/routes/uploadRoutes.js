@@ -243,4 +243,77 @@ router.post('/document', documentUpload.single('document'), handleUploadError, (
     }
 });
 
+/**
+ * POST /api/upload/avatar
+ * Upload and resize avatar image (200x200)
+ */
+router.post('/avatar', imageUpload.single('avatar'), handleUploadError, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error: 'No avatar file provided'
+            });
+        }
+
+        const file = req.file;
+        const filePath = file.path;
+
+        // Validate magic bytes for security
+        if (!validateMagicBytes(filePath, 'image')) {
+            fs.unlinkSync(filePath);
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid image file format'
+            });
+        }
+
+        // Create avatars directory if it doesn't exist
+        const avatarsDir = path.join(__dirname, '../../uploads/avatars');
+        if (!fs.existsSync(avatarsDir)) {
+            fs.mkdirSync(avatarsDir, { recursive: true });
+        }
+
+        // Generate new filename for avatar
+        const avatarFilename = `avatar_${Date.now()}${path.extname(file.originalname)}`;
+        const avatarPath = path.join(avatarsDir, avatarFilename);
+        const avatarUrl = `/uploads/avatars/${avatarFilename}`;
+
+        // Try to use sharp for resizing, fallback to just copying
+        try {
+            const sharp = require('sharp');
+            await sharp(filePath)
+                .resize(200, 200, { fit: 'cover' })
+                .toFile(avatarPath);
+
+            // Delete original uploaded file
+            fs.unlinkSync(filePath);
+        } catch (sharpError) {
+            // Sharp not available, just move the file
+            console.log('Sharp not available, using original image');
+            fs.renameSync(filePath, avatarPath);
+        }
+
+        console.log(`👤 Avatar uploaded: ${file.originalname} -> ${avatarFilename}`);
+
+        res.json({
+            success: true,
+            file: {
+                url: avatarUrl,
+                filename: avatarFilename
+            }
+        });
+    } catch (error) {
+        console.error('Avatar upload error:', error);
+        if (req.file && req.file.path) {
+            try { fs.unlinkSync(req.file.path); } catch (e) { }
+        }
+        res.status(500).json({
+            success: false,
+            error: 'Avatar upload failed'
+        });
+    }
+});
+
 module.exports = router;
+

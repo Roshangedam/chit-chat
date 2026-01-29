@@ -102,7 +102,28 @@ const usePeerStore = create((set, get) => ({
 
     getOfflinePeers: () => get().peers.filter(p => p.status === 'offline'),
 
-    getPeerById: (id) => get().peers.find(p => p.id === id)
+    getPeerById: (id) => get().peers.find(p => p.id === id),
+
+    // ==========================================
+    // Unread Count Management
+    // ==========================================
+
+    // Increment unread count for a peer
+    incrementUnread: (peerId) => set((state) => ({
+        peers: state.peers.map(p =>
+            p.id === peerId ? { ...p, unreadCount: (p.unreadCount || 0) + 1 } : p
+        )
+    })),
+
+    // Reset unread count for a peer (when chat is opened)
+    resetUnread: (peerId) => set((state) => ({
+        peers: state.peers.map(p =>
+            p.id === peerId ? { ...p, unreadCount: 0 } : p
+        )
+    })),
+
+    // Get total unread count across all peers
+    getTotalUnread: () => get().peers.reduce((sum, p) => sum + (p.unreadCount || 0), 0)
 }));
 
 export default usePeerStore;

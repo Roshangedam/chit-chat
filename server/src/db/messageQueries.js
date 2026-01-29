@@ -133,6 +133,28 @@ function getUnreadMessages(receiverId) {
 }
 
 /**
+ * Get unread message counts grouped by sender
+ * @param {string} receiverId - Receiver's IP (current user)
+ * @returns {Object} - Object with senderId as key and count as value
+ */
+function getUnreadCountsBySender(receiverId) {
+  const stmt = db.prepare(`
+    SELECT sender_id, COUNT(*) as count 
+    FROM messages 
+    WHERE receiver_id = ? AND status != 'read'
+    GROUP BY sender_id
+  `);
+  const rows = stmt.all(receiverId);
+
+  // Convert to object for easy lookup
+  const counts = {};
+  rows.forEach(row => {
+    counts[row.sender_id] = row.count;
+  });
+  return counts;
+}
+
+/**
  * Mark messages as delivered
  * @param {string} senderId - Sender's IP
  * @param {string} receiverId - Receiver's IP
@@ -523,6 +545,7 @@ module.exports = {
   updateMessageStatus,
   updateMessagesStatus,
   getUnreadMessages,
+  getUnreadCountsBySender,
   markMessagesDelivered,
   markMessagesRead,
   editMessage,

@@ -8,17 +8,24 @@ import usePeerStore from '../store/peerStore';
 import useUserStore from '../store/userStore';
 import useMessageStore from '../store/messageStore';
 import GlobalSearch from './GlobalSearch';
+import UserAvatar from './UserAvatar';
+import ProfileInfoModal from './ProfileInfoModal';
+import { updateFaviconBadge } from '../utils/faviconBadge';
 import './PeerList.css';
 
 function PeerList() {
     const peers = usePeerStore((state) => state.peers);
     const selectedPeer = usePeerStore((state) => state.selectedPeer);
     const selectPeer = usePeerStore((state) => state.selectPeer);
+    const resetUnread = usePeerStore((state) => state.resetUnread);
     const currentUser = useUserStore((state) => state.currentUser);
     const typingUsers = useMessageStore((state) => state.typingUsers);
 
     // Filter state: 'all', 'online', 'offline'
     const [filter, setFilter] = useState('all');
+
+    // Profile info modal state
+    const [profileUser, setProfileUser] = useState(null);
 
     // Separate online and offline peers
     const onlinePeers = peers.filter(p => p.status === 'online');
@@ -75,6 +82,20 @@ function PeerList() {
 
     const handleSelectPeer = (peer) => {
         selectPeer(peer);
+        // Reset unread count when chat is opened
+        if (peer.unreadCount > 0) {
+            resetUnread(peer.id);
+            // Update browser title and favicon
+            setTimeout(() => {
+                const totalUnread = usePeerStore.getState().getTotalUnread();
+                document.title = totalUnread > 0 ? `(${totalUnread}) ChitChat` : 'ChitChat';
+                updateFaviconBadge(totalUnread);
+                // Dispatch event for Electron/Mobile
+                window.dispatchEvent(new CustomEvent('unread-count-changed', {
+                    detail: { count: totalUnread }
+                }));
+            }, 0);
+        }
     };
 
     // Get status icon for message status (WhatsApp style with SVG)
@@ -141,16 +162,18 @@ function PeerList() {
                             className={`peer-item ${selectedPeer?.id === peer.id ? 'selected' : ''}`}
                             onClick={() => handleSelectPeer(peer)}
                         >
-                            <div className="avatar">
-                                {peer.name?.[0]?.toUpperCase() || '?'}
-                                <span className={`status-dot ${peer.status === 'online' ? 'online' : 'offline'}`}></span>
-                            </div>
+                            <UserAvatar user={peer} size="medium" onClick={(user) => { setProfileUser(user); }} />
                             <div className="peer-info">
                                 <div className="peer-header">
                                     <span className="name">{peer.name}</span>
-                                    {peer.last_chat_time && (
-                                        <span className="last-time">{formatLastSeen(peer.last_chat_time)}</span>
-                                    )}
+                                    <div className="peer-header-right">
+                                        {peer.unreadCount > 0 && (
+                                            <span className="unread-badge">{peer.unreadCount > 99 ? '99+' : peer.unreadCount}</span>
+                                        )}
+                                        {peer.last_chat_time && (
+                                            <span className="last-time">{formatLastSeen(peer.last_chat_time)}</span>
+                                        )}
+                                    </div>
                                 </div>
                                 <span className={`last-message ${typingUsers[peer.id] ? 'typing' : ''}`}>
                                     {typingUsers[peer.id] ? (
@@ -185,6 +208,18 @@ function PeerList() {
                     </div>
                 )}
             </div>
+
+            {/* Profile Info Modal */}
+            {profileUser && (
+                <ProfileInfoModal
+                    user={profileUser}
+                    onClose={() => setProfileUser(null)}
+                    onSelectPeer={(user) => {
+                        handleSelectPeer(user);
+                        setProfileUser(null);
+                    }}
+                />
+            )}
         </div>
     );
 }

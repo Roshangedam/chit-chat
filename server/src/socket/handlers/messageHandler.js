@@ -5,6 +5,7 @@
 
 const { saveMessage, getMessagesBetweenUsers, markMessagesRead, updateMessageStatus, editMessage, deleteMessage, pinMessage, unpinMessage, getPinnedMessages, searchMessages, getMediaBetweenUsers, getMessagesAroundId, getOlderMessages } = require('../../db/messageQueries');
 const { getUserSockets, isUserOnline } = require('../onlineUsers');
+const pushService = require('../../services/pushService');
 
 /**
  * Register message handlers on socket connection
@@ -54,7 +55,23 @@ function registerMessageHandlers(socket, io) {
 
             console.log(`  ✓✓ Delivered to ${recipientSockets.length} socket(s)`);
         } else {
-            console.log(`  ✓ Recipient offline, message stored`);
+            // Recipient is offline - try to send push notification
+            const preview = type === 'text'
+                ? content.substring(0, 50) + (content.length > 50 ? '...' : '')
+                : type === 'image' ? '📷 Photo'
+                    : type === 'video' ? '🎬 Video'
+                        : type === 'audio' ? '🎵 Voice message'
+                            : type === 'file' ? `📎 ${fileName || 'File'}`
+                                : content.substring(0, 50);
+
+            pushService.sendMessageNotification(
+                receiverId,
+                socket.clientIP, // Sender name (will show IP for now)
+                preview,
+                clientIP
+            );
+
+            console.log(`  ✓ Recipient offline, message stored (push attempted)`);
         }
     });
 
@@ -358,6 +375,27 @@ function registerMessageHandlers(socket, io) {
         });
 
         console.log(`  → Sent ${media.length} media items`);
+    });
+
+    // Handle fetching media preview for profile modal
+    socket.on('media:getPreview', (data) => {
+        const { peerId, limit = 6 } = data;
+
+        console.log(`🖼️ Fetching media preview: ${clientIP} <-> ${peerId} (limit: ${limit})`);
+
+        const media = getMediaBetweenUsers(clientIP, peerId, null, limit, 0);
+
+        socket.emit('media:preview', {
+            peerId: peerId,
+            media: media.map(m => ({
+                id: m.id,
+                type: m.type,
+                content: m.content,
+                created_at: m.created_at
+            }))
+        });
+
+        console.log(`  → Sent ${media.length} preview items`);
     });
 
     // Handle jump to specific message (from search/gallery)

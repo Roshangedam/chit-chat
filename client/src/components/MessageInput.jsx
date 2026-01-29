@@ -315,7 +315,7 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
         if (!peerId || !currentUser) return;
 
         const tempId = `temp-${Date.now()}`;
-        const serverUrl = `http://${window.location.hostname}:3000`;
+        const serverUrl = ''; // Same origin - use relative URLs
         const typeEmoji = mediaType === 'video' ? '🎬 Video' : mediaType === 'document' ? '📎 Document' : '📷 Photo';
         const config = fileData.config;
 
@@ -362,7 +362,7 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
                 try {
                     const response = JSON.parse(xhr.responseText);
                     if (response.success) {
-                        const fullUrl = `${serverUrl}${response.file.url}`;
+                        const fullUrl = response.file.url; // Relative URL - same origin
                         // Update message with final URL
                         useMessageStore.getState().updateMessage(peerId, tempId, {
                             content: fullUrl,
@@ -398,7 +398,7 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
             useMessageStore.getState().updateUploadProgress(peerId, tempId, 0, 'failed');
         };
 
-        xhr.open('POST', `${serverUrl}${config.uploadEndpoint}`);
+        xhr.open('POST', config.uploadEndpoint); // Relative URL
         xhr.send(formData);
     };
 
@@ -447,7 +447,7 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
 
         const { blob, duration } = recordingData;
         const tempId = `temp-${Date.now()}`;
-        const serverUrl = `http://${window.location.hostname}:3000`;
+        const serverUrl = ''; // Same origin - use relative URLs
         const previewUrl = URL.createObjectURL(blob);
 
         // Add message to chat immediately with uploading state
@@ -489,7 +489,7 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
                 try {
                     const response = JSON.parse(xhr.responseText);
                     if (response.success) {
-                        const fileUrl = `${serverUrl}${response.file.url}`;
+                        const fileUrl = response.file.url; // Relative URL
 
                         // Update message with uploaded URL
                         useMessageStore.getState().updateUploadProgress(peerId, tempId, 100, 'complete');
@@ -522,7 +522,7 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
             useMessageStore.getState().updateUploadProgress(peerId, tempId, 0, 'error');
         };
 
-        xhr.open('POST', `${serverUrl}/api/upload/audio`);
+        xhr.open('POST', '/api/upload/audio'); // Relative URL
         xhr.send(formData);
     };
 

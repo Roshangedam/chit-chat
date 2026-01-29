@@ -1550,3 +1550,1211 @@ Before moving to Phase 4, ALL of these must work:
 - [ ] File size limits enforced
 - [ ] All media types show correct labels in peer list
 - [ ] All uploads work in real-time (no refresh needed)
+
+---
+
+## 🔔 Phase 3.5 (Bonus): Push Notifications
+
+> **Goal:** Professional-grade notification system that works:
+> - When tab is open (in-app notifications)
+> - When tab is in background (browser notifications)
+> - When browser is closed (Service Worker + Push)
+> - Future-ready for Electron Desktop & React Native Mobile
+
+### Overview
+| Feature | Tasks | Status |
+|---------|-------|--------|
+| 3.6.1 Notification Permission | 2 tasks | [ ] Not Started |
+| 3.6.2 In-App Notifications | 3 tasks | [ ] Not Started |
+| 3.6.3 Browser Web Notifications | 4 tasks | [ ] Not Started |
+| 3.6.4 Notification Sound | 3 tasks | [ ] Not Started |
+| 3.6.5 Notification Settings | 4 tasks | [ ] Not Started |
+| 3.6.6 Service Worker (Background) | 4 tasks | [ ] Not Started |
+| 3.6.7 Notification Store | 2 tasks | [ ] Not Started |
+
+---
+
+### 3.6.1 Notification Permission
+
+#### Task 3.6.1.1: Permission Request UI
+**Dependencies:** None
+**Files to create:**
+- `client/src/components/NotificationPermission.jsx`
+- `client/src/components/NotificationPermission.css`
+
+**Steps:**
+- [ ] Create permission request banner/modal
+- [ ] Show on first visit after user identity confirmed
+- [ ] "Enable Notifications" button with icon
+- [ ] "Maybe Later" option (don't ask again for 24h)
+- [ ] Handle all permission states: default, granted, denied
+- [ ] Store permission preference in localStorage
+
+**Verify:**
+- [ ] Permission prompt appears on first load
+- [ ] Clicking Enable triggers browser permission dialog
+- [ ] Permission state saved correctly
+
+---
+
+#### Task 3.6.1.2: Permission Utility
+**Dependencies:** Task 3.6.1.1
+**Files to create:**
+- `client/src/utils/notificationPermission.js`
+
+**Steps:**
+- [ ] `requestPermission()` - async function to request
+- [ ] `getPermission()` - check current state
+- [ ] `isSupported()` - check if Notification API exists
+- [ ] Handle Safari/iOS differences
+- [ ] Cross-browser compatibility (Chrome, Firefox, Edge, Safari)
+
+**Verify:**
+- [ ] Works in Chrome, Firefox, Edge
+- [ ] Graceful fallback when not supported
+
+---
+
+### 3.6.2 In-App Notifications (Toast)
+
+#### Task 3.6.2.1: Toast Notification Component
+**Dependencies:** None
+**Files to create:**
+- `client/src/components/Toast.jsx`
+- `client/src/components/Toast.css`
+
+**Steps:**
+- [ ] Animated slide-in toast from top-right
+- [ ] Shows sender avatar, name, message preview
+- [ ] Auto-dismiss after 5 seconds
+- [ ] Click to open chat with sender
+- [ ] Close button (X)
+- [ ] Stack multiple toasts (max 3 visible)
+- [ ] Different styles for: message, file, image, audio, video
+
+**Verify:**
+- [ ] Toast appears on new message
+- [ ] Click opens correct chat
+- [ ] Auto-dismisses
+
+---
+
+#### Task 3.6.2.2: Toast Manager
+**Dependencies:** Task 3.6.2.1
+**Files to create:**
+- `client/src/utils/toastManager.js`
+
+**Steps:**
+- [ ] Queue system for notifications
+- [ ] `showToast({ title, body, icon, onClick, type })`
+- [ ] Remove toast after timeout or click
+- [ ] Don't show if chat is already open with sender
+- [ ] Don't show if user preference is "muted"
+
+**Verify:**
+- [ ] Multiple toasts stack correctly
+- [ ] No toast when chatting with sender
+
+---
+
+#### Task 3.6.2.3: Message Preview Formatter
+**Dependencies:** Task 3.6.2.1
+**Files to create:**
+- `client/src/utils/messagePreview.js`
+
+**Steps:**
+- [ ] `formatPreview(message)` - returns preview text
+- [ ] Text: First 50 characters + "..."
+- [ ] Image: "📷 Photo"
+- [ ] Video: "🎬 Video"
+- [ ] Audio: "🎵 Voice message"
+- [ ] File: "📎 {filename}"
+- [ ] GIF: "GIF"
+- [ ] Sticker: "Sticker"
+- [ ] Reply: "↩️ Replied to message"
+- [ ] Forward: "↪️ Forwarded"
+
+**Verify:**
+- [ ] All message types show correct preview
+
+---
+
+### 3.6.3 Browser Web Notifications
+
+#### Task 3.6.3.1: Web Notification Utility
+**Dependencies:** Task 3.6.1.2
+**Files to create:**
+- `client/src/utils/webNotification.js`
+
+**Steps:**
+- [ ] `showNotification({ title, body, icon, tag, data })`
+- [ ] Use Notification API for browser notifications
+- [ ] Set `requireInteraction: false` for auto-close
+- [ ] Use `tag` to replace duplicate notifications from same sender
+- [ ] Attach `onclick` to focus tab and open chat
+- [ ] Handle `onclose` event
+
+**Verify:**
+- [ ] Notification shows when tab in background
+- [ ] Click brings tab to front and opens chat
+
+---
+
+#### Task 3.6.3.2: Notification Trigger in Socket Handler
+**Dependencies:** Task 3.6.3.1, Task 3.6.2.2
+**Files to modify:**
+- `client/src/socket.js`
+
+**Steps:**
+- [ ] On `message:new` event:
+  - If tab focused + chat open → No notification
+  - If tab focused + different chat → In-app toast
+  - If tab not focused → Browser notification
+- [ ] Check `document.hasFocus()` and `document.hidden`
+- [ ] Include sender avatar as notification icon
+- [ ] Play notification sound (if enabled)
+
+**Verify:**
+- [ ] Correct notification type based on tab state
+- [ ] No duplicate notifications
+
+---
+
+#### Task 3.6.3.3: Notification Icon Handler
+**Dependencies:** Task 3.6.3.1
+**Files to modify:**
+- `client/src/utils/webNotification.js`
+
+**Steps:**
+- [ ] Generate avatar icon for notifications
+- [ ] Use sender's first letter if no profile pic
+- [ ] Create canvas-based avatar with gradient background
+- [ ] Cache generated icons to avoid repeated creation
+
+**Verify:**
+- [ ] Notifications show correct sender icon
+
+---
+
+#### Task 3.6.3.4: Notification Click Handler
+**Dependencies:** Task 3.6.3.1
+**Files to modify:**
+- `client/src/utils/webNotification.js`
+
+**Steps:**
+- [ ] On click: Focus window/tab
+- [ ] Navigate to chat with sender
+- [ ] Mark messages as read
+- [ ] Close notification
+- [ ] Works across browser tabs
+
+**Verify:**
+- [ ] Clicking notification opens correct chat
+- [ ] Works even if app was in background tab
+
+---
+
+### 3.6.4 Notification Sound
+
+#### Task 3.6.4.1: Sound Assets
+**Dependencies:** None
+**Files to create:**
+- `client/public/sounds/notification.mp3`
+- `client/public/sounds/notification.ogg`
+
+**Steps:**
+- [ ] Find/create pleasant notification sound (< 1 second)
+- [ ] Provide MP3 and OGG formats for browser compatibility
+- [ ] Keep file size small (< 50KB)
+- [ ] Professional, subtle sound (not jarring)
+
+**Verify:**
+- [ ] Sound plays in all major browsers
+
+---
+
+#### Task 3.6.4.2: Sound Player Utility
+**Dependencies:** Task 3.6.4.1
+**Files to create:**
+- `client/src/utils/soundPlayer.js`
+
+**Steps:**
+- [ ] `playNotificationSound()` function
+- [ ] Preload audio on app start
+- [ ] Use Web Audio API for better control
+- [ ] Check user preference before playing
+- [ ] Don't play if system is muted
+- [ ] Fallback to HTML5 Audio if Web Audio not supported
+
+**Verify:**
+- [ ] Sound plays on new message
+- [ ] Respects mute settings
+
+---
+
+#### Task 3.6.4.3: Sound Integration
+**Dependencies:** Task 3.6.4.2, Task 3.6.3.2
+**Files to modify:**
+- `client/src/socket.js`
+
+**Steps:**
+- [ ] Play sound when notification is shown
+- [ ] Don't play if chat is focused on sender
+- [ ] Throttle sounds (max 1 per 2 seconds)
+- [ ] Different sounds for different notification types (optional)
+
+**Verify:**
+- [ ] Sound plays with notification
+- [ ] No sound spam on multiple messages
+
+---
+
+### 3.6.5 Notification Settings
+
+#### Task 3.6.5.1: Settings Store
+**Dependencies:** None
+**Files to create:**
+- `client/src/store/settingsStore.js`
+
+**Steps:**
+- [ ] Zustand store for notification settings
+- [ ] Settings:
+  - `notificationsEnabled: boolean`
+  - `soundEnabled: boolean`
+  - `soundVolume: number (0-100)`
+  - `showPreview: boolean` (show message content or just "New message")
+  - `mutedUsers: string[]` (user IDs)
+  - `mutedUntil: { [userId]: timestamp }` (temporary mute)
+- [ ] Persist to localStorage
+- [ ] Sync across tabs
+
+**Verify:**
+- [ ] Settings persist after refresh
+- [ ] Changes sync across tabs
+
+---
+
+#### Task 3.6.5.2: Settings UI
+**Dependencies:** Task 3.6.5.1
+**Files to create:**
+- `client/src/components/NotificationSettings.jsx`
+- `client/src/components/NotificationSettings.css`
+
+**Steps:**
+- [ ] Toggle: Enable/Disable notifications
+- [ ] Toggle: Enable/Disable sound
+- [ ] Slider: Sound volume
+- [ ] Toggle: Show message preview
+- [ ] List: Muted users (with unmute option)
+- [ ] Button: Test notification
+- [ ] Button: Test sound
+- [ ] Link to browser notification settings
+
+**Verify:**
+- [ ] All toggles work correctly
+- [ ] Test buttons trigger notification/sound
+
+---
+
+#### Task 3.6.5.3: Per-User Mute
+**Dependencies:** Task 3.6.5.1
+**Files to modify:**
+- `client/src/components/PeerList.jsx` (or chat header menu)
+
+**Steps:**
+- [ ] Right-click menu on peer: "Mute notifications"
+- [ ] Options: Mute forever, Mute for 1 hour, Mute for 8 hours, Mute for 1 day
+- [ ] Show muted icon on peer in list
+- [ ] Unmute option in same menu
+
+**Verify:**
+- [ ] Muted user doesn't trigger notifications
+- [ ] Mute icon shows correctly
+- [ ] Timed mute auto-expires
+
+---
+
+#### Task 3.6.5.4: Do Not Disturb Mode
+**Dependencies:** Task 3.6.5.1
+**Files to modify:**
+- `client/src/store/settingsStore.js`
+- `client/src/components/NotificationSettings.jsx`
+
+**Steps:**
+- [ ] Global DND toggle
+- [ ] Schedule DND (e.g., 10 PM - 8 AM daily)
+- [ ] Badge still updates, just no sound/popup
+- [ ] DND indicator in app header
+
+**Verify:**
+- [ ] DND blocks all notifications
+- [ ] Scheduled DND works correctly
+
+---
+
+### 3.6.6 Service Worker (Background Notifications)
+
+#### Task 3.6.6.1: Service Worker Setup
+**Dependencies:** None
+**Files to create:**
+- `client/public/sw.js`
+- `client/src/utils/serviceWorker.js`
+
+**Steps:**
+- [ ] Create service worker file
+- [ ] Register SW on app load
+- [ ] Handle SW updates gracefully
+- [ ] Cache notification assets (icon, sound)
+
+**Verify:**
+- [ ] SW registers successfully
+- [ ] Shows in DevTools > Application > Service Workers
+
+---
+
+#### Task 3.6.6.2: Push Subscription
+**Dependencies:** Task 3.6.6.1
+**Files to modify:**
+- `client/src/utils/serviceWorker.js`
+- `server/src/socket/handlers/userHandler.js`
+
+**Steps:**
+- [ ] Generate VAPID keys for push notifications
+- [ ] Subscribe user to push on permission grant
+- [ ] Send subscription to server
+- [ ] Store subscription in database
+
+**Verify:**
+- [ ] Push subscription created
+- [ ] Subscription saved on server
+
+---
+
+#### Task 3.6.6.3: Server Push Sender
+**Dependencies:** Task 3.6.6.2
+**Files to create:**
+- `server/src/services/pushService.js`
+**Files to modify:**
+- `server/src/socket/handlers/messageHandler.js`
+
+**Steps:**
+- [ ] Install `web-push` package
+- [ ] Configure VAPID keys
+- [ ] `sendPush(userId, payload)` function
+- [ ] Send push when user is offline but has subscription
+- [ ] Handle expired/invalid subscriptions
+
+**Verify:**
+- [ ] Push received when browser closed (but subscription exists)
+
+---
+
+#### Task 3.6.6.4: SW Notification Display
+**Dependencies:** Task 3.6.6.1
+**Files to modify:**
+- `client/public/sw.js`
+
+**Steps:**
+- [ ] Listen for `push` event
+- [ ] Parse push data (sender, message preview, chatId)
+- [ ] Show notification with `self.registration.showNotification()`
+- [ ] Handle `notificationclick` - open app and navigate to chat
+- [ ] Handle multiple notifications (use `tag` for grouping)
+
+**Verify:**
+- [ ] Notification shows when browser is closed
+- [ ] Click opens app at correct chat
+
+---
+
+### 3.6.7 Notification Center (Optional Enhancement)
+
+#### Task 3.6.7.1: Notification History Store
+**Dependencies:** None
+**Files to create:**
+- `client/src/store/notificationStore.js`
+
+**Steps:**
+- [ ] Store last 50 notifications in memory
+- [ ] Each notification: { id, senderId, message, timestamp, read }
+- [ ] Mark as read when clicked
+- [ ] Clear all button
+
+**Verify:**
+- [ ] Notifications stored correctly
+- [ ] Persist across component re-renders
+
+---
+
+#### Task 3.6.7.2: Notification Center UI
+**Dependencies:** Task 3.6.7.1
+**Files to create:**
+- `client/src/components/NotificationCenter.jsx`
+- `client/src/components/NotificationCenter.css`
+
+**Steps:**
+- [ ] Bell icon in header with badge count
+- [ ] Dropdown panel showing recent notifications
+- [ ] Group by time: Today, Yesterday, This Week
+- [ ] Click to navigate to chat
+- [ ] "Mark all as read" button
+- [ ] "Clear all" button
+- [ ] Empty state when no notifications
+
+**Verify:**
+- [ ] Bell shows correct count
+- [ ] Notifications list displays correctly
+- [ ] Click navigates to chat
+
+---
+
+## ✅ Phase 3.5 Completion Checklist
+
+Before moving to Phase 4, ALL of these must work:
+
+- [x] Permission request shown and handled correctly
+- [x] In-app toast notifications appear for new messages
+- [x] Browser notifications work when tab in background
+- [x] Click on notification opens correct chat
+- [x] Notification sound plays (when enabled)
+- [x] Sound can be muted globally
+- [x] Individual users can be muted
+- [x] Message preview shows correct format for all types
+- [x] No notifications when chatting with sender
+- [x] Settings persist after page refresh
+- [x] Service Worker registered (for future push)
+- [x] Works in Chrome, Firefox, Edge
+- [x] Graceful degradation when notifications not supported
+
+### 🎉 PHASE 3.5 COMPLETE! (28 Jan 2026)
+
+---
+
+## ⚙️ Phase 3.6: Settings & Profile System
+
+> **Icons:** Using Lucide React icons for professional, modern look matching app theme
+
+### Overview
+| Feature | Tasks | Status |
+|---------|-------|--------|
+| 3.6.1 Sidebar Navigation | 4 tasks | [ ] Not Started |
+| 3.6.2 Settings Panel | 3 tasks | [ ] Not Started |
+| 3.6.3 Profile Settings | 5 tasks | [ ] Not Started |
+| 3.6.4 Notifications (Migrate) | 3 tasks | [ ] Not Started |
+| 3.6.5 About Section | 2 tasks | [ ] Not Started |
+| 3.6.6 Coming Soon Placeholder | 1 task | [ ] Not Started |
+
+---
+
+### 3.6.1 Sidebar Navigation
+
+#### Task 3.6.1.1: Install Lucide Icons
+**Dependencies:** None
+**Steps:**
+- [ ] Run `npm install lucide-react` in client folder
+**Verify:** Import icons without errors
+
+---
+
+#### Task 3.6.1.2: Create Sidebar Component
+**Dependencies:** Task 3.6.1.1
+**Files to create:**
+- `client/src/components/Sidebar.jsx`
+- `client/src/components/Sidebar.css`
+
+**Icons to use (Lucide):**
+| Tab | Icon | Lucide Name |
+|-----|------|-------------|
+| Chats | 💬 | `MessageSquare` |
+| Groups | 👥 | `Users` (disabled, coming soon) |
+| Settings | ⚙️ | `Settings` |
+| Avatar | 👤 | User avatar image |
+
+**Steps:**
+- [ ] Create fixed vertical sidebar (50-60px width)
+- [ ] Add icon buttons with tooltips
+- [ ] User avatar at bottom with online status dot
+- [ ] Hover effect with app accent color (#6366f1)
+- [ ] Active tab indicator (left border or background)
+
+**Verify:**
+- [ ] Icons render correctly
+- [ ] Hover effects work
+- [ ] Active state highlights
+
+---
+
+#### Task 3.6.1.3: Integrate Sidebar with App
+**Dependencies:** Task 3.6.1.2
+**Files to modify:**
+- `client/src/App.jsx`
+- `client/src/App.css`
+
+**Steps:**
+- [ ] Add sidebar state: `activeTab` (chats/settings)
+- [ ] Import and render Sidebar component
+- [ ] Update layout: `[Sidebar][Content][ChatWindow]`
+- [ ] Handle tab click events
+
+**Verify:**
+- [ ] Clicking icons switches content panel
+- [ ] Layout looks correct
+
+---
+
+#### Task 3.6.1.4: Groups Tab Coming Soon
+**Dependencies:** Task 3.6.1.2
+**Steps:**
+- [ ] Disable Groups icon (grayed out)
+- [ ] Show tooltip "Coming Soon" on hover
+- [ ] No click action
+
+**Verify:**
+- [ ] Groups icon shows as disabled
+- [ ] Tooltip appears on hover
+
+---
+
+### 3.6.2 Settings Panel
+
+#### Task 3.6.2.1: Create Settings Panel Container
+**Dependencies:** Task 3.6.1.3
+**Files to create:**
+- `client/src/components/settings/SettingsPanel.jsx`
+- `client/src/components/settings/SettingsPanel.css`
+
+**Layout:**
+```
+┌──────────────────────────────────────────┐
+│ Settings                          [Back] │
+├──────────────────────────────────────────┤
+│ [Categories List]  │ [Category Content]  │
+│                    │                     │
+│ 👤 Profile         │   (renders based    │
+│ 💬 Chat 🔒         │    on selected      │
+│ 📦 Storage 🔒      │    category)        │
+│ 🔔 Notifications   │                     │
+│ 🔒 Privacy 🔒      │                     │
+│ ℹ️ About           │                     │
+└──────────────────────────────────────────┘
+```
+
+**Icons for categories (Lucide):**
+| Category | Icon Name | Status |
+|----------|-----------|--------|
+| Profile | `User` | ✅ Active |
+| Chat | `MessageCircle` | 🔒 Locked |
+| Storage | `HardDrive` | 🔒 Locked |
+| Notifications | `Bell` | ✅ Active |
+| Privacy | `Shield` | 🔒 Locked |
+| About | `Info` | ✅ Active |
+
+**Steps:**
+- [ ] Create settings panel with two-column layout
+- [ ] Category list on left (with icons)
+- [ ] Content area on right
+- [ ] Active category highlight
+- [ ] 🔒 Lock icon for coming soon categories
+
+**Verify:**
+- [ ] Settings panel renders
+- [ ] Categories list shows correctly
+- [ ] Click category changes content
+
+---
+
+#### Task 3.6.2.2: Settings Panel State Management
+**Dependencies:** Task 3.6.2.1
+**Files to modify:**
+- `client/src/store/settingsStore.js`
+
+**Steps:**
+- [ ] Add `activeSettingsCategory` state
+- [ ] Default to 'profile'
+- [ ] Add `setActiveCategory` action
+
+**Verify:**
+- [ ] Category state persists
+
+---
+
+#### Task 3.6.2.3: Back Navigation
+**Dependencies:** Task 3.6.2.1
+**Steps:**
+- [ ] Add back button/arrow in settings header
+- [ ] Click returns to Chats tab
+- [ ] Use `ArrowLeft` Lucide icon
+
+**Verify:**
+- [ ] Back button returns to chat list
+
+---
+
+### 3.6.3 Profile Settings
+
+#### Task 3.6.3.1: Database Schema Update
+**Dependencies:** None
+**Files to modify:**
+- `server/src/db/schema.js`
+
+**Steps:**
+- [ ] Add `status_message TEXT` column to users table
+- [ ] Add `bio TEXT` column to users table
+- [ ] Run migration on server start
+
+**Verify:**
+- [ ] Columns exist in database
+
+---
+
+#### Task 3.6.3.2: Server Profile Update Functions
+**Dependencies:** Task 3.6.3.1
+**Files to modify:**
+- `server/src/db/userQueries.js`
+
+**Steps:**
+- [ ] Create `updateUserProfile(userId, { name, statusMessage, bio })`
+- [ ] Create `updateUserAvatar(userId, avatarPath)`
+- [ ] Return updated user object
+
+**Verify:**
+- [ ] Functions update database correctly
+
+---
+
+#### Task 3.6.3.3: Server Socket Events
+**Dependencies:** Task 3.6.3.2
+**Files to modify:**
+- `server/src/socket/handlers/userHandler.js`
+
+**Steps:**
+- [ ] Handle `user:updateProfile` event
+- [ ] Handle `user:updateAvatar` event
+- [ ] Broadcast `user:updated` to all clients
+
+**Verify:**
+- [ ] Profile updates broadcast to all users
+
+---
+
+#### Task 3.6.3.4: Avatar Upload Endpoint
+**Dependencies:** Task 3.6.3.2
+**Files to modify:**
+- `server/src/routes/uploadRoutes.js`
+
+**Steps:**
+- [ ] Create `/api/upload/avatar` endpoint
+- [ ] Accept image files (jpg, png, webp)
+- [ ] Resize to 200x200
+- [ ] Save to `uploads/avatars/`
+- [ ] Delete old avatar on update
+
+**Verify:**
+- [ ] Avatar uploads via API
+- [ ] Image resized correctly
+
+---
+
+#### Task 3.6.3.5: Profile Settings UI
+**Dependencies:** Task 3.6.3.3, Task 3.6.3.4
+**Files to create:**
+- `client/src/components/settings/ProfileSettings.jsx`
+- `client/src/components/settings/ProfileSettings.css`
+
+**Features:**
+| Feature | Details |
+|---------|---------|
+| Profile Photo | Large preview, Upload, Remove buttons |
+| Display Name | Inline edit, max 25 chars, save icon |
+| Status | Dropdown (Available/Busy/Away) + custom text |
+| Bio | Textarea, max 250 chars, character count |
+
+**Icons (Lucide):**
+- `Camera` - for photo upload
+- `Pencil` - for edit mode
+- `Check` - for save
+- `X` - for cancel
+- `Trash2` - for remove photo
+
+**Steps:**
+- [ ] Create profile photo section with upload/remove
+- [ ] Create name input with edit/save controls
+- [ ] Create status dropdown with custom option
+- [ ] Create bio textarea with char counter
+- [ ] Handle socket events for real-time sync
+
+**Verify:**
+- [ ] Photo upload works
+- [ ] Name update reflects in peer list
+- [ ] Status shows under name in chats
+- [ ] Bio saves correctly
+
+---
+
+### 3.6.4 Notifications (Migrate Existing)
+
+#### Task 3.6.4.1: Move Notification Files
+**Dependencies:** Task 3.6.2.1
+**Files to delete:**
+- `client/src/components/NotificationSettings.jsx`
+- `client/src/components/NotificationSettings.css`
+
+**Files to create:**
+- `client/src/components/settings/NotificationSettings.jsx`
+- `client/src/components/settings/NotificationSettings.css`
+
+**Steps:**
+- [ ] Copy existing notification settings logic
+- [ ] Update styling to match settings panel
+- [ ] Delete old files
+
+**Verify:**
+- [ ] All notification features work in new location
+
+---
+
+#### Task 3.6.4.2: Update Imports
+**Dependencies:** Task 3.6.4.1
+**Files to modify:**
+- Any file importing old NotificationSettings
+
+**Steps:**
+- [ ] Update import paths
+- [ ] Fix any broken references
+
+**Verify:**
+- [ ] No import errors
+
+---
+
+#### Task 3.6.4.3: Notification Settings UI Polish
+**Dependencies:** Task 3.6.4.1
+**Steps:**
+- [ ] Use Lucide icons (`Bell`, `BellOff`, `Volume2`, `VolumeX`)
+- [ ] Match styling with other settings sections
+- [ ] Test all toggles work
+
+**Verify:**
+- [ ] UI consistent with profile settings
+- [ ] All features functional
+
+---
+
+### 3.6.5 About Section
+
+#### Task 3.6.5.1: Create About Settings UI
+**Dependencies:** Task 3.6.2.1
+**Files to create:**
+- `client/src/components/settings/AboutSettings.jsx`
+- `client/src/components/settings/AboutSettings.css`
+
+**Display:**
+| Item | Value |
+|------|-------|
+| App Name | ChitChat v2 |
+| Version | 2.0.0 |
+| Server Status | 🟢 Connected / 🔴 Disconnected |
+| Server Address | (from socket) |
+| Developer | Your name/credits |
+| Licenses | Link to open source |
+
+**Icons (Lucide):**
+- `Info` - header
+- `Wifi` / `WifiOff` - connection status
+- `Github` - if linking to repo
+- `Heart` - credits
+
+**Steps:**
+- [ ] Create about section layout
+- [ ] Fetch server connection status from socket
+- [ ] Display app version from config
+- [ ] Add developer credits
+
+**Verify:**
+- [ ] About section displays correctly
+- [ ] Server status is accurate
+
+---
+
+#### Task 3.6.5.2: Server Version Endpoint
+**Dependencies:** None
+**Files to modify:**
+- `server/src/index.js`
+
+**Steps:**
+- [ ] Add `/api/version` endpoint
+- [ ] Return `{ version, uptime, serverName }`
+
+**Verify:**
+- [ ] Endpoint returns correct info
+
+---
+
+### 3.6.6 Coming Soon Placeholder
+
+#### Task 3.6.6.1: Create Coming Soon Component
+**Dependencies:** Task 3.6.2.1
+**Files to create:**
+- `client/src/components/settings/ComingSoon.jsx`
+
+**Display:**
+```
+┌─────────────────────────┐
+│                         │
+│      🔒                 │
+│                         │
+│   Coming Soon           │
+│   This feature is       │
+│   under development     │
+│                         │
+└─────────────────────────┘
+```
+
+**Icon (Lucide):** `Lock` or `Construction`
+
+**Steps:**
+- [ ] Create placeholder component
+- [ ] Use for Chat, Storage, Privacy sections
+
+**Verify:**
+- [ ] Locked sections show placeholder
+
+---
+
+## ✅ Phase 3.6 Completion Checklist
+
+Before moving to Phase 4, ALL of these must work:
+
+- [x] Sidebar shows with Chats, Groups (disabled), Settings icons
+- [x] Clicking Settings opens settings panel
+- [x] Profile photo upload and display works
+- [x] Name update reflects everywhere in real-time
+- [x] Status message shows in chat header
+- [x] Notification settings work in new location
+- [x] About section shows correct app info
+- [x] Coming Soon sections show placeholder
+- [x] All icons are professional Lucide icons
+- [x] UI matches app dark theme
+
+### 🎉 PHASE 3.6 COMPLETE!
+
+---
+
+## 🎁 Bonus Phase 3.7: Profile Info Modal
+
+### Overview
+| Feature | Tasks | Status |
+|---------|-------|--------|
+| 3.7.1 UserAvatar onClick | 2 tasks | ✅ Done |
+| 3.7.2 ProfileInfoModal | 5 tasks | ✅ Done |
+| 3.7.3 Server Shared Media | 2 tasks | ✅ Done |
+| 3.7.4 MediaGallery Integration | 1 task | ✅ Done |
+| 3.7.5 Integration | 2 tasks | ✅ Done |
+| 3.7.6 Self Avatar → Settings | 1 task | ✅ Done |
+
+**Goal:** Avatar click from anywhere (PeerList, ChatWindow, ForwardModal) opens profile info modal with WhatsApp-style layout.
+
+**Reusable Components Already Available:**
+- ✅ `MediaGallery.jsx` - Tabs, grid, lazy loading, infinite scroll
+- ✅ `UserAvatar.jsx` - Avatar with status dot
+- ✅ `AudioPlayer.jsx` - Audio playback
+- ✅ `DocumentPreview.jsx` - File preview & download
+
+---
+
+### 3.7.1 UserAvatar onClick Prop
+
+#### Task 3.7.1.1: Add onClick Prop to UserAvatar
+**Dependencies:** None
+**Files to modify:**
+- `client/src/components/UserAvatar.jsx`
+
+**Steps:**
+- [x] Add `onClick` prop to component
+- [x] Wrap avatar in clickable container when onClick provided
+- [x] Add cursor pointer style
+
+**Verify:**
+- [x] UserAvatar accepts onClick prop
+- [x] Click triggers handler
+
+---
+
+#### Task 3.7.1.2: Prevent Bubble on Status Dot
+**Dependencies:** Task 3.7.1.1
+**Files to modify:**
+- `client/src/components/UserAvatar.jsx`
+
+**Steps:**
+- [x] Ensure click only fires on avatar, not status dot
+- [x] Stop propagation if needed
+
+**Verify:**
+- [x] Click works correctly
+
+---
+
+### 3.7.2 ProfileInfoModal Component
+
+#### Task 3.7.2.1: Create Modal Structure
+**Dependencies:** Task 3.7.1.1
+**Files to create:**
+- `client/src/components/ProfileInfoModal.jsx`
+- `client/src/components/ProfileInfoModal.css`
+
+**Layout:**
+```
+┌─────────────────────────────────┐
+│  ✕                Profile Info  │
+├─────────────────────────────────┤
+│        ┌───────────┐           │
+│        │   PHOTO   │           │
+│        │   (80px)  │           │
+│        └───────────┘           │
+│        John Doe                │
+│        🟢 Online               │
+├─────────────────────────────────┤
+│  📝 Bio                        │
+│  "Software Developer..."       │
+├─────────────────────────────────┤
+│  ℹ️ Info                       │
+│  IP: 192.168.1.100            │
+│  PC: JOHN-LAPTOP              │
+│  Joined: Jan 2024             │
+├─────────────────────────────────┤
+│  📁 Media                      │
+│  [img] [img] [img]  [More]    │
+├─────────────────────────────────┤
+│  💬 Message  🔔 Mute  🗑️ Clear │
+└─────────────────────────────────┘
+```
+
+**Steps:**
+- [x] Create modal overlay
+- [x] Create close button
+- [x] Add large profile photo (clickable)
+
+**Verify:**
+- [x] Modal opens and closes
+- [x] Photo displays at 80px
+
+---
+
+#### Task 3.7.2.2: User Info Section
+**Dependencies:** Task 3.7.2.1
+**Files to modify:**
+- `client/src/components/ProfileInfoModal.jsx`
+
+**User Fields:**
+| Field | Source |
+|-------|--------|
+| Name | `user.name` |
+| Status | `user.status` (online/offline) |
+| Status Message | `user.status_message` |
+| Bio | `user.bio` |
+| IP | `user.ip_address` |
+| Hostname | `user.hostname` |
+| Last Seen | `user.last_seen` |
+| Joined | `user.created_at` |
+
+**Steps:**
+- [x] Display name and status
+- [x] Display bio section
+- [x] Display info section with IP, hostname, joined date
+- [x] Format last_seen nicely
+
+**Verify:**
+- [x] All user info displays correctly
+- [x] Offline users show last seen
+
+---
+
+#### Task 3.7.2.3: Photo Fullscreen View
+**Dependencies:** Task 3.7.2.1
+**Files to modify:**
+- `client/src/components/ProfileInfoModal.jsx`
+
+**Steps:**
+- [x] On photo click, show fullscreen overlay
+- [x] Add close button
+- [x] ESC key closes
+
+**Verify:**
+- [x] Photo opens fullscreen
+- [x] Can close with X or ESC
+
+---
+
+#### Task 3.7.2.4: Media Preview Section
+**Dependencies:** Task 3.7.3.1
+**Files to modify:**
+- `client/src/components/ProfileInfoModal.jsx`
+
+**Steps:**
+- [x] Show 3-6 recent shared media thumbnails
+- [x] Add "View All" button
+- [x] On click, open MediaGallery
+
+**Verify:**
+- [x] Media previews show
+- [x] View All opens gallery
+
+---
+
+#### Task 3.7.2.5: Quick Actions Bar
+**Dependencies:** Task 3.7.2.1
+**Files to modify:**
+- `client/src/components/ProfileInfoModal.jsx`
+
+**Actions:**
+| Button | Function |
+|--------|----------|
+| 💬 Message | Select peer and close modal |
+| 🔔 Mute | Toggle mute for this user |
+| 🗑️ Clear Chat | Confirm and clear chat history |
+
+**Steps:**
+- [x] Add action buttons row
+- [x] Implement Message action (select peer)
+- [x] Implement Mute toggle
+- [x] Implement Clear Chat with confirmation
+
+**Verify:**
+- [x] All actions work correctly
+- [x] Clear shows confirmation first
+
+---
+
+### 3.7.3 Server - Shared Media API
+
+#### Task 3.7.3.1: Create getSharedMedia Query
+**Dependencies:** None
+**Files to modify:**
+- `server/src/db/messageQueries.js`
+
+**Steps:**
+- [x] Create `getSharedMedia(userId1, userId2, type, limit)` function *(existing: getMediaBetweenUsers)*
+- [x] Query messages where type IN ('image', 'video', 'audio', 'file')
+- [x] Return array with {id, type, content, created_at, fileName}
+
+**Verify:**
+- [x] Query returns correct media messages
+
+---
+
+#### Task 3.7.3.2: Socket Event for Shared Media
+**Dependencies:** Task 3.7.3.1
+**Files to modify:**
+- `server/src/socket/handlers/messageHandler.js`
+
+**Steps:**
+- [x] Handle 'media:getPreview' event *(added)*
+- [x] Call getMediaBetweenUsers query
+- [x] Return 'media:preview' event with results
+
+**Verify:**
+- [x] Client receives shared media list
+
+---
+
+### 3.7.4 MediaGallery Integration
+
+> **NOTE:** `MediaGallery.jsx` already exists with tabs, grid, lazy loading!
+> No new component needed - just integrate with ProfileInfoModal.
+
+#### Task 3.7.4.1: Use Existing MediaGallery
+**Dependencies:** Task 3.7.2.4
+**Existing Files:**
+- `client/src/components/MediaGallery.jsx` ✅
+- `client/src/components/MediaGallery.css` ✅
+
+**Features Already Available:**
+- ✅ Photos, Videos, Documents tabs
+- ✅ Grid layout with lazy loading
+- ✅ Infinite scroll pagination
+- ✅ Download functionality
+- ✅ Fullscreen image viewer
+
+**Steps:**
+- [x] Import MediaGallery in ProfileInfoModal
+- [x] Pass peerId when "View All" clicked
+- [x] MediaGallery opens as overlay
+
+**Verify:**
+- [x] View All opens existing MediaGallery
+
+---
+
+### 3.7.5 Integration
+
+#### Task 3.7.5.1: ChatWindow Integration
+**Dependencies:** Task 3.7.2.1
+**Files to modify:**
+- `client/src/components/ChatWindow.jsx`
+
+**Steps:**
+- [x] Add `showProfileModal` state
+- [x] Pass onClick to header UserAvatar
+- [x] Render ProfileInfoModal when state is true
+
+**Verify:**
+- [x] Avatar click in header opens profile modal
+
+---
+
+#### Task 3.7.5.2: PeerList Integration
+**Dependencies:** Task 3.7.2.1
+**Files to modify:**
+- `client/src/components/PeerList.jsx`
+
+**Steps:**
+- [x] Add `profileUser` state
+- [x] Pass onClick to UserAvatar in list
+- [x] Render ProfileInfoModal when profileUser set
+
+**Verify:**
+- [x] Avatar click in peer list opens profile modal
+
+---
+
+### 3.7.6 Self Avatar Click → Profile Settings
+
+#### Task 3.7.6.1: Sidebar Self Avatar Click
+**Dependencies:** Phase 3.6 (Settings Panel)
+**Files to modify:**
+- `client/src/components/Sidebar.jsx`
+
+**Behavior:**
+| Avatar Location | Click Action |
+|-----------------|--------------|
+| Sidebar (self) | Open Profile Settings |
+| PeerList (others) | Open ProfileInfoModal |
+| ChatWindow header (peer) | Open ProfileInfoModal |
+
+**Steps:**
+- [x] Add UserAvatar to sidebar with onClick
+- [x] On click, open Settings → Profile section
+- [x] Use handleTabChange with category param
+
+**Verify:**
+- [x] Own avatar click opens Profile Settings
+- [x] Other users' avatar opens ProfileInfoModal
+
+---
+
+## ✅ Bonus Phase 3.7 Completion Checklist
+
+- [x] Avatar click opens profile modal (from PeerList, ChatWindow)
+- [x] Profile shows photo, name, status, bio
+- [x] Profile shows IP, hostname, joined date
+- [x] Last seen shows for offline users
+- [x] Photo click opens fullscreen view
+- [x] Media preview shows recent shared items
+- [x] View All opens MediaGallery
+- [x] MediaGallery has tabs (Photos, Videos, Files)
+- [x] Quick actions work (Message, Mute, Clear)
+- [x] Reusable pattern - same modal from anywhere
+- [x] **NEW:** Self avatar → Profile Settings
+
+### 🎉 BONUS PHASE 3.7 COMPLETE!
+

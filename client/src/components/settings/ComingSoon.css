@@ -1,0 +1,79 @@
+/* Coming Soon Placeholder Styles */
+
+.coming-soon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    width: 100%;
+}
+
+.coming-soon-content {
+    text-align: center;
+    padding: 40px;
+}
+
+.coming-soon-icon {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+}
+
+.sparkle {
+    position: absolute;
+    color: #fbbf24;
+    animation: twinkle 2s infinite;
+}
+
+.sparkle-1 {
+    top: -8px;
+    right: -8px;
+    animation-delay: 0s;
+}
+
+.sparkle-2 {
+    bottom: -4px;
+    left: -4px;
+    animation-delay: 1s;
+}
+
+@keyframes twinkle {
+
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
+
+.coming-soon h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 12px;
+}
+
+.coming-soon p {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.coming-soon .subtitle {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--accent);
+}
