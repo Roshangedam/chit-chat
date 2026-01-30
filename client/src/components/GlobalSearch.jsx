@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import usePeerStore from '../store/peerStore';
 import socket from '../socket';
+import UserAvatar from './UserAvatar';
 import './GlobalSearch.css';
 
 function GlobalSearch() {
@@ -120,8 +121,25 @@ function GlobalSearch() {
         setResults([]);
     };
 
+    // Handle user click - open chat with that user
+    const handleUserClick = (peer) => {
+        selectPeer(peer);
+        setIsExpanded(false);
+        setQuery('');
+        setResults([]);
+    };
+
+    // Filter peers by name (local search)
+    const matchingPeers = query.trim().length >= 2
+        ? peers.filter(p => {
+            const name = (p.name || p.custom_name || p.id || '').toLowerCase();
+            return name.includes(query.toLowerCase());
+        })
+        : [];
+
     const groupedResults = groupResults(results);
     const hasResults = Object.keys(groupedResults).length > 0;
+    const hasMatchingPeers = matchingPeers.length > 0;
 
     return (
         <div className={`global-search ${isExpanded ? 'expanded' : ''}`}>
@@ -156,50 +174,85 @@ function GlobalSearch() {
                             <div className="spinner"></div>
                             <span>Searching...</span>
                         </div>
-                    ) : !hasResults ? (
+                    ) : (!hasResults && !hasMatchingPeers) ? (
                         <div className="no-results">
-                            <span>No messages found for "{query}"</span>
+                            <span>No results found for "{query}"</span>
                         </div>
                     ) : (
                         <div className="results-list">
-                            {Object.entries(groupedResults).map(([peerId, { peer, dateGroups }]) => (
-                                <div key={peerId} className="user-group">
-                                    {/* User Header */}
-                                    <div className="user-header">
-                                        <div className="user-avatar">
-                                            {peer.name?.[0]?.toUpperCase() || '?'}
+                            {/* Matching Users Section */}
+                            {hasMatchingPeers && (
+                                <div className="matching-users-section">
+                                    <div className="section-header">👤 Users</div>
+                                    {matchingPeers.map(peer => (
+                                        <div
+                                            key={peer.id}
+                                            className="matching-user-item"
+                                            onClick={() => handleUserClick(peer)}
+                                        >
+                                            <UserAvatar
+                                                user={peer}
+                                                size="small"
+                                                showStatus={true}
+                                            />
+                                            <div className="matching-user-info">
+                                                <HighlightedText
+                                                    text={peer.name || peer.custom_name || peer.id}
+                                                    highlight={query}
+                                                />
+                                                <span className={`user-status ${peer.status === 'online' ? 'online' : 'offline'}`}>
+                                                    {peer.status === 'online' ? 'Online' : 'Offline'}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <span className="user-name">{peer.name || peerId}</span>
-                                        <span className="result-count">
-                                            {Object.values(dateGroups).flat().length} results
-                                        </span>
-                                    </div>
+                                    ))}
+                                </div>
+                            )}
 
-                                    {/* Date Groups */}
-                                    {Object.entries(dateGroups).map(([date, messages]) => (
-                                        <div key={date} className="date-group">
-                                            <div className="date-header">{date}</div>
-                                            {messages.map(msg => (
-                                                <div
-                                                    key={msg.id}
-                                                    className="result-item"
-                                                    onClick={() => handleResultClick(msg)}
-                                                >
-                                                    <div className="result-content">
-                                                        <HighlightedText
-                                                            text={msg.content || '[Media]'}
-                                                            highlight={query}
-                                                        />
-                                                    </div>
-                                                    <span className="result-time">
-                                                        {formatTime(msg.created_at)}
-                                                    </span>
+                            {/* Messages Section */}
+                            {hasResults && (
+                                <>
+                                    {hasMatchingPeers && <div className="section-header">💬 Messages</div>}
+                                    {Object.entries(groupedResults).map(([peerId, { peer, dateGroups }]) => (
+                                        <div key={peerId} className="user-group">
+                                            {/* User Header */}
+                                            <div className="user-header">
+                                                <div className="user-avatar">
+                                                    {peer.name?.[0]?.toUpperCase() || '?'}
+                                                </div>
+                                                <span className="user-name">{peer.name || peerId}</span>
+                                                <span className="result-count">
+                                                    {Object.values(dateGroups).flat().length} results
+                                                </span>
+                                            </div>
+
+                                            {/* Date Groups */}
+                                            {Object.entries(dateGroups).map(([date, messages]) => (
+                                                <div key={date} className="date-group">
+                                                    <div className="date-header">{date}</div>
+                                                    {messages.map(msg => (
+                                                        <div
+                                                            key={msg.id}
+                                                            className="result-item"
+                                                            onClick={() => handleResultClick(msg)}
+                                                        >
+                                                            <div className="result-content">
+                                                                <HighlightedText
+                                                                    text={msg.content || '[Media]'}
+                                                                    highlight={query}
+                                                                />
+                                                            </div>
+                                                            <span className="result-time">
+                                                                {formatTime(msg.created_at)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             ))}
                                         </div>
                                     ))}
-                                </div>
-                            ))}
+                                </>
+                            )}
                         </div>
                     )}
                 </div>

@@ -16,10 +16,11 @@ import usePeerStore from '../store/peerStore';
  * @param {Object} options
  * @param {string} options.senderId - Sender user ID
  * @param {string} options.senderName - Sender display name
+ * @param {string} options.senderAvatar - Sender avatar URL (optional)
  * @param {Object} options.message - Message object
  * @param {Function} options.onNavigate - Function to navigate to chat
  */
-export function notifyNewMessage({ senderId, senderName, message, onNavigate }) {
+export function notifyNewMessage({ senderId, senderName, senderAvatar, message, onNavigate }) {
     const settings = useSettingsStore.getState();
     const selectedPeer = usePeerStore.getState().selectedPeer;
 
@@ -69,6 +70,7 @@ export function notifyNewMessage({ senderId, senderName, message, onNavigate }) 
         showWebNotification({
             title: senderName,
             body: settings.showPreview ? preview : 'New message',
+            icon: senderAvatar || null,
             tag: `chat-${senderId}`,
             data: { senderId, messageId: message.id },
             onClick: handleClick

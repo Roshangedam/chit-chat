@@ -50,6 +50,7 @@ function ChatWindow() {
 
     // Header menu state
     const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef(null);
 
     // Media gallery state
     const [showMediaGallery, setShowMediaGallery] = useState(false);
@@ -65,6 +66,23 @@ function ChatWindow() {
 
     // Previous peer tracking
     const prevPeerIdRef = useRef(null);
+
+    // Click outside to close header menu and search panel
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            // Close header menu
+            if (showMenu && menuRef.current && !menuRef.current.contains(e.target)) {
+                setShowMenu(false);
+            }
+            // Close search panel when clicking outside (in chat area)
+            if (showSearch && e.target.closest('.chat-window') && !e.target.closest('.search-panel') && !e.target.closest('.search-toggle-btn')) {
+                setShowSearch(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showMenu, showSearch]);
 
     const messages = selectedPeer ? (allMessages[selectedPeer.id] || []) : [];
     const isTyping = selectedPeer ? typingUsers[selectedPeer.id] : false;
@@ -449,7 +467,7 @@ function ChatWindow() {
                 </div>
 
                 {/* 3-dot Menu */}
-                <div className="header-menu-container">
+                <div className="header-menu-container" ref={menuRef}>
                     <button
                         className="menu-toggle-btn"
                         onClick={() => setShowMenu(!showMenu)}

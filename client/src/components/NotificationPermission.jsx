@@ -24,7 +24,32 @@ export default function NotificationPermission() {
         // Register SW on mount regardless
         registerServiceWorker();
 
-        return () => clearTimeout(timer);
+        // Auto-subscribe if permission already granted (for returning users)
+        const autoSubscribe = async () => {
+            if (getPermission() === 'granted') {
+                try {
+                    socket.emit('push:getVapidKey', async (response) => {
+                        if (response?.vapidPublicKey) {
+                            const subscription = await subscribeToPush(response.vapidPublicKey);
+                            if (subscription) {
+                                socket.emit('push:subscribe', { subscription: subscription.toJSON() });
+                                console.log('🔔 Auto push subscription successful');
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error('Auto push subscribe failed:', error);
+                }
+            }
+        };
+
+        // Small delay to ensure socket is connected
+        const autoTimer = setTimeout(autoSubscribe, 2000);
+
+        return () => {
+            clearTimeout(timer);
+            clearTimeout(autoTimer);
+        };
     }, []);
 
     const handleEnable = async () => {

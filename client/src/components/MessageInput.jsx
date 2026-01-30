@@ -31,6 +31,12 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
     const [showAudioRecorder, setShowAudioRecorder] = useState(false);
     const typingTimeoutRef = useRef(null);
 
+    // Refs for click-outside detection
+    const emojiPickerRef = useRef(null);
+    const gifPickerRef = useRef(null);
+    const stickerPickerRef = useRef(null);
+    const attachmentMenuRef = useRef(null);
+
     // Predefined sticker packs
     const stickerPacks = [
         { name: 'Emotions', icon: '😊', stickers: ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🥰', '😍', '🤗', '🤔', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '😯', '😲', '😴', '🤤', '😪', '😵', '🤯', '🤠', '🥳'] },
@@ -43,6 +49,31 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
     const isTypingRef = useRef(false);
     const inputRef = useRef(null);
     const { currentUser } = useUserStore();
+
+    // Click outside to close popups
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            // Close emoji picker
+            if (showEmojiPicker && emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+                setShowEmojiPicker(false);
+            }
+            // Close GIF picker
+            if (showGifPicker && gifPickerRef.current && !gifPickerRef.current.contains(e.target)) {
+                setShowGifPicker(false);
+            }
+            // Close sticker picker
+            if (showStickerPicker && stickerPickerRef.current && !stickerPickerRef.current.contains(e.target)) {
+                setShowStickerPicker(false);
+            }
+            // Close attachment menu
+            if (showAttachmentMenu && attachmentMenuRef.current && !attachmentMenuRef.current.contains(e.target)) {
+                setShowAttachmentMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showEmojiPicker, showGifPicker, showStickerPicker, showAttachmentMenu]);
 
     // Focus input when replying or editing
     useEffect(() => {
@@ -658,7 +689,7 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
 
                 {/* Emoji Picker Popup */}
                 {showEmojiPicker && (
-                    <div className="emoji-picker-popup">
+                    <div className="emoji-picker-popup" ref={emojiPickerRef}>
                         <EmojiPicker
                             onEmojiClick={onEmojiClick}
                             theme="dark"
@@ -681,7 +712,7 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
 
                 {/* GIF Picker Popup */}
                 {showGifPicker && (
-                    <div className="gif-picker-popup">
+                    <div className="gif-picker-popup" ref={gifPickerRef}>
                         <input
                             type="text"
                             placeholder="Search GIFs..."
@@ -726,7 +757,7 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
 
                 {/* Attachment Menu Popup */}
                 {showAttachmentMenu && (
-                    <div className="attachment-menu-popup">
+                    <div className="attachment-menu-popup" ref={attachmentMenuRef}>
                         <div className="attachment-menu-header">Share</div>
                         <div className="attachment-menu-grid">
                             <button className="attachment-option image-opt" onClick={() => openMediaUpload('image')}>
@@ -787,7 +818,7 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
 
                 {/* Sticker Picker Popup (triggered from attachment menu) */}
                 {showStickerPicker && (
-                    <div className="sticker-picker-popup">
+                    <div className="sticker-picker-popup" ref={stickerPickerRef}>
                         <div className="sticker-pack-tabs">
                             {stickerPacks.map((pack, idx) => (
                                 <button

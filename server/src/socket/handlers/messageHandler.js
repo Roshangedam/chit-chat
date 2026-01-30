@@ -5,6 +5,7 @@
 
 const { saveMessage, getMessagesBetweenUsers, markMessagesRead, updateMessageStatus, editMessage, deleteMessage, pinMessage, unpinMessage, getPinnedMessages, searchMessages, getMediaBetweenUsers, getMessagesAroundId, getOlderMessages } = require('../../db/messageQueries');
 const { getUserSockets, isUserOnline } = require('../onlineUsers');
+const { findUserByIP } = require('../../db/userQueries');
 const pushService = require('../../services/pushService');
 
 /**
@@ -64,11 +65,17 @@ function registerMessageHandlers(socket, io) {
                             : type === 'file' ? `📎 ${fileName || 'File'}`
                                 : content.substring(0, 50);
 
+            // Get sender's actual name from database
+            const senderUser = findUserByIP(clientIP);
+            const senderName = senderUser?.name || senderUser?.custom_name || clientIP;
+            const senderAvatar = senderUser?.avatar || null;
+
             pushService.sendMessageNotification(
                 receiverId,
-                socket.clientIP, // Sender name (will show IP for now)
+                senderName,
                 preview,
-                clientIP
+                clientIP,
+                senderAvatar
             );
 
             console.log(`  ✓ Recipient offline, message stored (push attempted)`);

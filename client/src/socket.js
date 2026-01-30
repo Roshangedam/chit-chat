@@ -186,6 +186,7 @@ socket.on('message:new', (data) => {
         notifyNewMessage({
             senderId: data.senderId,
             senderName: sender?.name || data.senderId,
+            senderAvatar: sender?.avatar || null,
             message: message,
             onNavigate: (senderId) => {
                 // This will be called when notification is clicked

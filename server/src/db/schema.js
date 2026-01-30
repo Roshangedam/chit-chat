@@ -173,6 +173,20 @@ function initializeSchema() {
   `);
   console.log('  ✓ Indexes created');
 
+  // Push subscriptions table (for Web Push notifications)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      user_id TEXT PRIMARY KEY,
+      endpoint TEXT NOT NULL,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+  console.log('  ✓ Push subscriptions table ready');
+
   // Migration: Add is_forwarded column if it doesn't exist
   try {
     db.exec(`ALTER TABLE messages ADD COLUMN is_forwarded INTEGER DEFAULT 0`);

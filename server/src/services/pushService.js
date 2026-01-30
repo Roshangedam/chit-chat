@@ -1,17 +1,16 @@
 /**
  * Push Notification Service
  * Handles Web Push notifications using web-push library
+ * Persists subscriptions in SQLite database
  */
 
 const webpush = require('web-push');
 const path = require('path');
 const fs = require('fs');
+const db = require('../db/database');
 
 // VAPID keys file path
 const VAPID_KEYS_FILE = path.join(__dirname, '../../vapid-keys.json');
-
-// Store for push subscriptions (in production, use database)
-const subscriptions = new Map(); // userId -> subscription
 
 /**
  * Initialize VAPID keys
@@ -58,29 +57,69 @@ function getVapidPublicKey() {
 }
 
 /**
- * Save push subscription for user
+ * Save push subscription for user (persisted in database)
  * @param {string} userId - User ID
  * @param {Object} subscription - Push subscription object
  */
 function saveSubscription(userId, subscription) {
-    subscriptions.set(userId, subscription);
-    console.log(`📧 Push subscription saved for user: ${userId}`);
+    try {
+        const stmt = db.prepare(`
+            INSERT OR REPLACE INTO push_subscriptions 
+            (user_id, endpoint, p256dh, auth, updated_at)
+            VALUES (?, ?, ?, ?, datetime('now'))
+        `);
+
+        stmt.run(
+            userId,
+            subscription.endpoint,
+            subscription.keys.p256dh,
+            subscription.keys.auth
+        );
+
+        console.log(`📧 Push subscription saved for user: ${userId}`);
+    } catch (error) {
+        console.error(`📧 Failed to save subscription for ${userId}:`, error.message);
+    }
 }
 
 /**
- * Remove push subscription
+ * Remove push subscription (from database)
  * @param {string} userId - User ID
  */
 function removeSubscription(userId) {
-    subscriptions.delete(userId);
+    try {
+        const stmt = db.prepare('DELETE FROM push_subscriptions WHERE user_id = ?');
+        stmt.run(userId);
+        console.log(`📧 Push subscription removed for user: ${userId}`);
+    } catch (error) {
+        console.error(`📧 Failed to remove subscription for ${userId}:`, error.message);
+    }
 }
 
 /**
- * Get subscription for user
+ * Get subscription for user (from database)
  * @param {string} userId - User ID
+ * @returns {Object|null} - Subscription object or null
  */
 function getSubscription(userId) {
-    return subscriptions.get(userId);
+    try {
+        const stmt = db.prepare('SELECT * FROM push_subscriptions WHERE user_id = ?');
+        const row = stmt.get(userId);
+
+        if (!row) return null;
+
+        // Reconstruct subscription object format expected by web-push
+        return {
+            endpoint: row.endpoint,
+            keys: {
+                p256dh: row.p256dh,
+                auth: row.auth
+            }
+        };
+    } catch (error) {
+        console.error(`📧 Failed to get subscription for ${userId}:`, error.message);
+        return null;
+    }
 }
 
 /**
@@ -89,7 +128,7 @@ function getSubscription(userId) {
  * @param {Object} payload - Notification payload
  */
 async function sendPushToUser(userId, payload) {
-    const subscription = subscriptions.get(userId);
+    const subscription = getSubscription(userId);
 
     if (!subscription) {
         console.log(`📧 No push subscription for user: ${userId}`);
@@ -122,12 +161,20 @@ async function sendPushToUser(userId, payload) {
  * @param {string} senderName - Sender name
  * @param {string} messagePreview - Message preview text
  * @param {string} senderId - Sender user ID
+ * @param {string} senderAvatar - Sender avatar URL (optional)
  */
-async function sendMessageNotification(receiverId, senderName, messagePreview, senderId) {
+async function sendMessageNotification(receiverId, senderName, messagePreview, senderId, senderAvatar = null) {
+    // Build icon URL - use avatar if available, otherwise default favicon
+    let iconUrl = '/favicon.png';
+    if (senderAvatar) {
+        // Avatar is stored as relative path like /uploads/avatars/filename.jpg
+        iconUrl = senderAvatar;
+    }
+
     return sendPushToUser(receiverId, {
         title: senderName,
         body: messagePreview,
-        icon: '/favicon.png',
+        icon: iconUrl,
         tag: `chat-${senderId}`,
         data: {
             senderId,

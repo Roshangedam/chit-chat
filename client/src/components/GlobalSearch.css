@@ -137,6 +137,72 @@
     padding: 8px 0;
 }
 
+/* Section Headers */
+.section-header {
+    padding: 10px 16px 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+    margin-bottom: 4px;
+}
+
+/* Matching Users Section */
+.matching-users-section {
+    margin-bottom: 8px;
+}
+
+.matching-user-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.matching-user-item:hover {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.matching-user-item .user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #a855f7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.matching-user-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.matching-user-info mark {
+    background: rgba(99, 102, 241, 0.4);
+    color: white;
+    padding: 1px 3px;
+    border-radius: 3px;
+}
+
+.matching-user-info .user-status {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.matching-user-info .user-status.online {
+    color: var(--success);
+}
+
 /* User Group */
 .user-group {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
