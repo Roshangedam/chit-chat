@@ -7,6 +7,8 @@ import { io } from 'socket.io-client';
 import useUserStore from './store/userStore';
 import usePeerStore from './store/peerStore';
 import useMessageStore from './store/messageStore';
+import useGroupStore from './store/groupStore';
+import useGroupMessageStore from './store/groupMessageStore';
 import config from './config';
 import { updateFaviconBadge } from './utils/faviconBadge';
 import { notifyNewMessage, initializeNotifications } from './utils/notificationManager';
@@ -41,6 +43,18 @@ socket.on('connect', () => {
 
     // Emit to update hostname (server will try to resolve from IP)
     socket.emit('user:updateHostname');
+
+    // Re-join all group rooms on connect/reconnect
+    // This ensures real-time updates work after reconnection
+    socket.emit('group:getList', (response) => {
+        if (response?.success && response.groups) {
+            console.log(`👥 Joined ${response.groups.length} group rooms`);
+            const groupStore = getGroupStore();
+            if (groupStore) {
+                groupStore.getState().setGroups(response.groups);
+            }
+        }
+    });
 });
 
 socket.on('disconnect', (reason) => {
@@ -529,4 +543,183 @@ socket.on('message:unpinned', (data) => {
     });
 });
 
+// ==========================================
+// Group Events
+// ==========================================
+
+// Use imported group stores directly
+const getGroupStore = () => useGroupStore;
+const getGroupMessageStore = () => useGroupMessageStore;
+
+// Added to a new group
+socket.on('group:added', (data) => {
+    console.log('👥 Added to group:', data.group?.name);
+    getGroupStore().getState().addGroup(data.group);
+});
+
+// Group updated
+socket.on('group:updated', (data) => {
+    console.log('📝 Group updated:', data.groupId);
+    getGroupStore().getState().updateGroup(data.groupId, data.updates);
+});
+
+// Group deleted
+socket.on('group:deleted', (data) => {
+    console.log('🗑️ Group deleted:', data.groupName);
+    getGroupStore().getState().removeGroup(data.groupId);
+});
+
+// Member added to group
+socket.on('group:memberAdded', (data) => {
+    console.log('➕ Member added to group:', data.groupId);
+    getGroupStore().getState().addGroupMember(data.groupId, data.member);
+});
+
+// Member removed from group
+socket.on('group:memberRemoved', (data) => {
+    console.log('➖ Member removed from group:', data.groupId);
+    getGroupStore().getState().removeGroupMember(data.groupId, data.userId);
+});
+
+// Member left group
+socket.on('group:memberLeft', (data) => {
+    console.log('🚪 Member left group:', data.groupId);
+    getGroupStore().getState().removeGroupMember(data.groupId, data.userId);
+});
+
+// Member joined via invite
+socket.on('group:memberJoined', (data) => {
+    console.log('➕ Member joined group:', data.groupId);
+    getGroupStore().getState().addGroupMember(data.groupId, data.member);
+});
+
+// Role changed
+socket.on('group:memberRoleChanged', (data) => {
+    console.log('👑 Role changed in group:', data.groupId);
+    getGroupStore().getState().updateMemberRole(data.groupId, data.userId, data.newRole);
+});
+
+// Settings updated
+socket.on('group:settingsUpdated', (data) => {
+    console.log('⚙️ Settings updated for group:', data.groupId);
+    getGroupStore().getState().setGroupSettings(data.groupId, data.settings);
+});
+
+// Removed from group
+socket.on('group:removed', (data) => {
+    console.log('❌ Removed from group:', data.groupId);
+    getGroupStore().getState().removeGroup(data.groupId);
+});
+
+// Your role changed
+socket.on('group:roleChanged', (data) => {
+    console.log('👑 Your role changed in group:', data.groupId, 'to', data.newRole);
+    // Can trigger UI notification here
+});
+
+// Muted in group
+socket.on('group:muted', (data) => {
+    console.log('🔇 You were muted in group:', data.groupId);
+    // Can trigger UI notification here
+});
+
+// Unmuted in group
+socket.on('group:unmuted', (data) => {
+    console.log('🔊 You were unmuted in group:', data.groupId);
+    // Can trigger UI notification here
+});
+
+// ==========================================
+// Group Message Events
+// ==========================================
+
+socket.on('group:message:new', (data) => {
+    console.log('💬 New group message in:', data.groupId);
+    const groupStore = getGroupStore().getState();
+    const groupMessageStore = getGroupMessageStore().getState();
+    const currentUser = useUserStore.getState().currentUser;
+
+    // Map file fields
+    const message = {
+        ...data.message,
+        fileName: data.message.file_name || data.message.fileName,
+        fileSize: data.message.file_size || data.message.fileSize
+    };
+
+    // Only add message if it's NOT from the current user
+    // (sender already has temp message that gets updated via callback)
+    if (message.sender_id !== currentUser?.id) {
+        groupMessageStore.addMessage(data.groupId, message);
+    }
+
+    // Update last message in group list (always)
+    groupStore.updateLastMessage(data.groupId, message);
+
+    // Check if this group is currently selected
+    const selectedGroup = groupStore.selectedGroup;
+    const isGroupOpen = selectedGroup?.id === data.groupId && document.hasFocus();
+
+    if (!isGroupOpen && message.sender_id !== currentUser?.id) {
+        // Increment unread if not viewing this group
+        groupStore.incrementUnread(data.groupId);
+        updateBrowserTitle();
+
+        // Show notification
+        const group = groupStore.groups.find(g => g.id === data.groupId);
+        notifyNewMessage({
+            senderId: data.groupId,
+            senderName: group?.name || 'Group',
+            senderAvatar: group?.avatar || null,
+            message: {
+                ...message,
+                content: `${message.sender_name || message.sender_id}: ${message.content}`
+            },
+            onNavigate: () => {
+                // Navigate to group
+                groupStore.selectGroup(group);
+            }
+        });
+    }
+});
+
+// Typing in group
+socket.on('group:userTyping', (data) => {
+    getGroupStore().getState().setUserTyping(data.groupId, data.userId, data.isTyping, data.userName);
+});
+
+// Message pinned in group
+socket.on('group:message:pinned', (data) => {
+    console.log('📌 Group message pinned:', data.message?.id);
+    getGroupMessageStore().getState().updateMessage(data.groupId, data.message.id, {
+        is_pinned: 1,
+        pinned_at: data.message.pinned_at
+    });
+});
+
+// Message unpinned in group
+socket.on('group:message:unpinned', (data) => {
+    console.log('📌 Group message unpinned:', data.messageId);
+    getGroupMessageStore().getState().updateMessage(data.groupId, data.messageId, {
+        is_pinned: 0,
+        pinned_at: null
+    });
+});
+
+// Message deleted in group
+socket.on('group:message:deleted', (data) => {
+    console.log('🗑️ Group message deleted:', data.messageId);
+    getGroupMessageStore().getState().deleteMessage(data.groupId, data.messageId);
+});
+
+// Message edited in group
+socket.on('group:message:edited', (data) => {
+    console.log('✏️ Group message edited:', data.message?.id);
+    getGroupMessageStore().getState().updateMessage(data.groupId, data.message.id, {
+        content: data.message.content,
+        is_edited: 1,
+        edited_at: data.message.edited_at
+    });
+});
+
 export default socket;
+

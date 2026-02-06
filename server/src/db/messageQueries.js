@@ -538,6 +538,218 @@ function getOlderMessages(userId1, userId2, beforeId, limit = 50) {
   }));
 }
 
+// ============================================================
+// GROUP MESSAGE FUNCTIONS
+// ============================================================
+
+/**
+ * Save a group message
+ * @param {string} senderId - Sender user IP
+ * @param {string} groupId - Group ID
+ * @param {string} content - Message content
+ * @param {string} type - Message type
+ * @param {number|null} replyTo - Reply to message ID
+ * @param {boolean} isForwarded - Whether message is forwarded
+ * @param {string|null} caption - Optional caption
+ * @param {string|null} fileName - Original file name
+ * @param {number|null} fileSize - File size
+ * @returns {Object} - Saved message
+ */
+function saveGroupMessage(senderId, groupId, content, type = 'text', replyTo = null, isForwarded = false, caption = null, fileName = null, fileSize = null) {
+  const stmt = db.prepare(`
+    INSERT INTO messages (sender_id, group_id, content, type, reply_to, is_forwarded, caption, file_name, file_size, status, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'sent', datetime('now'))
+  `);
+
+  const result = stmt.run(senderId, groupId, content, type, replyTo, isForwarded ? 1 : 0, caption, fileName, fileSize);
+
+  const message = getMessageById(result.lastInsertRowid);
+
+  // If it's a reply, attach the replied message
+  if (replyTo) {
+    message.repliedMessage = getMessageById(replyTo);
+  }
+
+  return message;
+}
+
+/**
+ * Get messages for a group
+ * @param {string} groupId - Group ID
+ * @param {string} userId - Current user (for deleted_for filter)
+ * @param {number} limit - Max messages
+ * @param {number} offset - Offset for pagination
+ * @returns {Array} - Group messages
+ */
+function getGroupMessages(groupId, userId, limit = 50, offset = 0) {
+  const stmt = db.prepare(`
+    SELECT m.*, u.name as sender_name, u.custom_name as sender_custom_name, u.avatar as sender_avatar
+    FROM messages m
+    LEFT JOIN users u ON m.sender_id = u.id
+    WHERE m.group_id = ?
+      AND (m.deleted_for IS NULL OR m.deleted_for NOT LIKE ?)
+      AND m.is_deleted = 0
+    ORDER BY m.created_at DESC
+    LIMIT ? OFFSET ?
+  `);
+
+  const messages = stmt.all(groupId, `%${userId}%`, limit, offset);
+
+  if (messages.length > 0) {
+    // Get reactions for these messages
+    const { getReactionsForMessages } = require('./reactionQueries');
+    const messageIds = messages.map(m => m.id);
+    const reactionsMap = getReactionsForMessages(messageIds);
+
+    // Create a map of messages for reply lookup
+    const messageMap = {};
+    messages.forEach(m => messageMap[m.id] = m);
+
+    // Attach reactions and replied messages
+    messages.forEach(msg => {
+      msg.reactions = reactionsMap[msg.id] || [];
+
+      // Attach replied message if exists
+      if (msg.reply_to) {
+        msg.repliedMessage = messageMap[msg.reply_to] || getMessageById(msg.reply_to);
+      }
+    });
+  }
+
+  // Return in chronological order
+  return messages.reverse();
+}
+
+/**
+ * Get older group messages (for infinite scroll)
+ * @param {string} groupId - Group ID
+ * @param {string} userId - Current user
+ * @param {number} beforeId - Load before this ID
+ * @param {number} limit - Max messages
+ * @returns {Array} - Older messages
+ */
+function getOlderGroupMessages(groupId, userId, beforeId, limit = 50) {
+  const stmt = db.prepare(`
+    SELECT m.*, u.name as sender_name, u.custom_name as sender_custom_name, u.avatar as sender_avatar
+    FROM messages m
+    LEFT JOIN users u ON m.sender_id = u.id
+    WHERE m.group_id = ?
+      AND m.id < ?
+      AND (m.deleted_for IS NULL OR m.deleted_for NOT LIKE ?)
+      AND m.is_deleted = 0
+    ORDER BY m.id DESC
+    LIMIT ?
+  `);
+
+  const messages = stmt.all(groupId, beforeId, `%${userId}%`, limit);
+
+  // Return in chronological order
+  return messages.reverse().map(msg => ({
+    ...msg,
+    fileName: msg.file_name,
+    fileSize: msg.file_size
+  }));
+}
+
+/**
+ * Get pinned messages for a group
+ * @param {string} groupId - Group ID
+ * @returns {Array} - Pinned messages
+ */
+function getGroupPinnedMessages(groupId) {
+  const stmt = db.prepare(`
+    SELECT m.*, u.name as sender_name, u.custom_name as sender_custom_name
+    FROM messages m
+    LEFT JOIN users u ON m.sender_id = u.id
+    WHERE m.group_id = ? AND m.is_pinned = 1
+    ORDER BY m.pinned_at DESC
+    LIMIT 3
+  `);
+  return stmt.all(groupId);
+}
+
+/**
+ * Search messages in a group
+ * @param {string} groupId - Group ID
+ * @param {string} userId - Current user
+ * @param {string} searchQuery - Search query
+ * @param {number} limit - Max results
+ * @returns {Array} - Matching messages
+ */
+function searchGroupMessages(groupId, userId, searchQuery, limit = 50) {
+  if (!searchQuery || searchQuery.trim() === '') {
+    return [];
+  }
+
+  const stmt = db.prepare(`
+    SELECT m.*, u.name as sender_name, u.custom_name as sender_custom_name
+    FROM messages m
+    LEFT JOIN users u ON m.sender_id = u.id
+    WHERE m.group_id = ?
+      AND m.content LIKE ?
+      AND m.is_deleted = 0
+      AND (m.deleted_for IS NULL OR m.deleted_for NOT LIKE ?)
+    ORDER BY m.created_at DESC
+    LIMIT ?
+  `);
+
+  return stmt.all(groupId, `%${searchQuery}%`, `%${userId}%`, limit);
+}
+
+/**
+ * Get media messages for a group
+ * @param {string} groupId - Group ID
+ * @param {string} userId - Current user
+ * @param {string|null} type - Filter by type
+ * @param {number} limit - Max results
+ * @param {number} offset - Offset
+ * @returns {Array} - Media messages
+ */
+function getGroupMedia(groupId, userId, type = null, limit = 30, offset = 0) {
+  let query = `
+    SELECT m.*, u.name as sender_name, u.custom_name as sender_custom_name
+    FROM messages m
+    LEFT JOIN users u ON m.sender_id = u.id
+    WHERE m.group_id = ?
+      AND m.type IN ('image', 'video', 'file')
+      AND (m.deleted_for IS NULL OR m.deleted_for NOT LIKE ?)
+      AND m.is_deleted = 0
+  `;
+
+  const params = [groupId, `%${userId}%`];
+
+  if (type) {
+    query += ` AND m.type = ?`;
+    params.push(type);
+  }
+
+  query += ` ORDER BY m.created_at DESC LIMIT ? OFFSET ?`;
+  params.push(limit, offset);
+
+  const stmt = db.prepare(query);
+  return stmt.all(...params).map(msg => ({
+    ...msg,
+    fileName: msg.file_name,
+    fileSize: msg.file_size
+  }));
+}
+
+/**
+ * Get unread count for a group (messages after last read)
+ * @param {string} groupId - Group ID
+ * @param {string} userId - User ID
+ * @param {number} lastReadMessageId - Last message ID the user has read
+ * @returns {number} - Unread count
+ */
+function getGroupUnreadCount(groupId, userId, lastReadMessageId = 0) {
+  const stmt = db.prepare(`
+    SELECT COUNT(*) as count FROM messages 
+    WHERE group_id = ? AND id > ? AND sender_id != ? AND is_deleted = 0
+  `);
+  const result = stmt.get(groupId, lastReadMessageId, userId);
+  return result ? result.count : 0;
+}
+
 module.exports = {
   saveMessage,
   getMessageById,
@@ -556,5 +768,13 @@ module.exports = {
   searchMessages,
   getMediaBetweenUsers,
   getMessagesAroundId,
-  getOlderMessages
+  getOlderMessages,
+  // Group message functions
+  saveGroupMessage,
+  getGroupMessages,
+  getOlderGroupMessages,
+  getGroupPinnedMessages,
+  searchGroupMessages,
+  getGroupMedia,
+  getGroupUnreadCount
 };

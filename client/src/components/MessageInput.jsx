@@ -1,19 +1,22 @@
 /**
  * MessageInput Component
  * Input field for sending messages with reply and edit support
+ * Supports both individual and group chats via props
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import EmojiPicker from 'emoji-picker-react';
 import socket from '../socket';
 import useMessageStore from '../store/messageStore';
+import useGroupMessageStore from '../store/groupMessageStore';
 import useUserStore from '../store/userStore';
 import usePeerStore from '../store/peerStore';
+import useGroupStore from '../store/groupStore';
 import MediaUpload from './MediaUpload';
 import AudioRecorder from './AudioRecorder';
 import './MessageInput.css';
 
-function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCancelEdit }) {
+function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCancelEdit, isGroup = false, groupId, onSend, onTyping }) {
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -93,7 +96,13 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
     const handleTyping = useCallback(() => {
         if (!isTypingRef.current && !editingMessage) {
             isTypingRef.current = true;
-            socket.emit('typing:start', { receiverId: peerId });
+
+            // Use onTyping prop if provided (for groups)
+            if (onTyping) {
+                onTyping(true);
+            } else {
+                socket.emit('typing:start', { receiverId: peerId });
+            }
         }
 
         if (typingTimeoutRef.current) {
@@ -102,9 +111,13 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
 
         typingTimeoutRef.current = setTimeout(() => {
             isTypingRef.current = false;
-            socket.emit('typing:stop', { receiverId: peerId });
+            if (onTyping) {
+                onTyping(false);
+            } else {
+                socket.emit('typing:stop', { receiverId: peerId });
+            }
         }, 2000);
-    }, [peerId, editingMessage]);
+    }, [peerId, editingMessage, onTyping]);
 
     const handleChange = (e) => {
         setMessage(e.target.value);
@@ -134,18 +147,30 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
             clearTimeout(typingTimeoutRef.current);
         }
         if (isTypingRef.current) {
-            socket.emit('typing:stop', { receiverId: peerId });
+            if (onTyping) {
+                onTyping(false);
+            } else {
+                socket.emit('typing:stop', { receiverId: peerId });
+            }
             isTypingRef.current = false;
         }
 
         // Handle EDIT vs SEND
         if (editingMessage) {
             // Send edit to server
-            socket.emit('message:edit', {
-                messageId: editingMessage.id,
-                newContent: trimmedMessage,
-                receiverId: peerId
-            });
+            if (isGroup) {
+                socket.emit('group:message:edit', {
+                    groupId: groupId || peerId,
+                    messageId: editingMessage.id,
+                    newContent: trimmedMessage
+                });
+            } else {
+                socket.emit('message:edit', {
+                    messageId: editingMessage.id,
+                    newContent: trimmedMessage,
+                    receiverId: peerId
+                });
+            }
 
             setMessage('');
             setIsSending(false);
@@ -153,7 +178,16 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
             return;
         }
 
-        // Generate temp ID for optimistic update
+        // For groups, use the onSend prop if provided
+        if (isGroup && onSend) {
+            onSend(trimmedMessage, 'text', { replyToId: replyingTo?.id });
+            setMessage('');
+            setIsSending(false);
+            if (onCancelReply) onCancelReply();
+            return;
+        }
+
+        // Generate temp ID for optimistic update (individual chat)
         const tempId = `temp-${Date.now()}`;
 
         // Add message optimistically (with reply info)

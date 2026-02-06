@@ -1,7 +1,7 @@
 /* PeerList Component Styles */
 
 .peer-list {
-  width: 320px;
+  width: 340px;
   height: 100%;
   background: var(--bg-glass);
   border-right: 1px solid var(--border-glass);
@@ -419,4 +419,73 @@
 
 .status-tick.read .status-icon {
   stroke: #3b82f6;
+}
+
+/* Group Items in Unified List */
+.group-item {
+  position: relative;
+}
+
+.group-avatar-wrapper {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+}
+
+.group-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.group-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+}
+
+.group-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  font-size: 0.7rem;
+  background: var(--bg-glass, #1a1a2e);
+  border-radius: 50%;
+  padding: 2px;
+  line-height: 1;
+}
+
+/* New Group Button */
+.new-group-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--accent, #6366f1);
+  border-radius: 50%;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.new-group-btn:hover {
+  background: rgba(99, 102, 241, 0.4);
+  transform: scale(1.1);
+}
+
+.muted-text {
+  color: var(--text-muted, #666);
+  font-size: 0.75rem;
 }

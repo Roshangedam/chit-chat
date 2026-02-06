@@ -12,7 +12,7 @@ import './Message.css';
 // Available reactions
 const REACTIONS = ['👍', '❤️', '😂', '🔥', '😢', '👏'];
 
-function Message({ message, isMine, currentUserId, selectedPeerId, onReply, onForward, onEdit, onDelete, onPin, onScrollToMessage }) {
+function Message({ message, isMine, currentUserId, selectedPeerId, onReply, onForward, onEdit, onDelete, onPin, onScrollToMessage, showSender, senderName, senderAvatar, isGroup }) {
     const [showActions, setShowActions] = useState(false);
     const [imageLoading, setImageLoading] = useState(true);
     const [imageError, setImageError] = useState(false);
@@ -162,11 +162,32 @@ function Message({ message, isMine, currentUserId, selectedPeerId, onReply, onFo
     return (
         <div
             id={`message-${message.id}`}
-            className={`message ${isMine ? 'sent' : 'received'} ${message.is_pinned === 1 ? 'pinned' : ''}`}
+            className={`message ${isMine ? 'sent' : 'received'} ${message.is_pinned === 1 ? 'pinned' : ''} ${isGroup && !isMine ? 'group-message' : ''}`}
             onMouseEnter={() => setShowActions(true)}
             onMouseLeave={() => setShowActions(false)}
         >
+            {/* Sender Avatar for group messages (not own) */}
+            {isGroup && showSender && !isMine && (
+                <div className="message-sender-avatar">
+                    {senderAvatar ? (
+                        <img src={senderAvatar} alt={senderName} className="sender-avatar-img" />
+                    ) : (
+                        <div className="sender-avatar-placeholder" style={{ background: `hsl(${(senderName || '').charCodeAt(0) * 137 % 360}, 50%, 40%)` }}>
+                            {(senderName || '?').charAt(0).toUpperCase()}
+                        </div>
+                    )}
+                </div>
+            )}
             <div className="message-content">
+                {/* Sender info for group messages */}
+                {isGroup && showSender && !isMine && (
+                    <div className="message-sender-info">
+                        <span className="sender-name" style={{ color: `hsl(${(senderName || '').charCodeAt(0) * 137 % 360}, 70%, 50%)` }}>
+                            {senderName || 'Unknown'}
+                        </span>
+                    </div>
+                )}
+
                 {/* Pinned indicator */}
                 {message.is_pinned === 1 && (
                     <div className="pinned-tag">

@@ -24,16 +24,14 @@ function Sidebar({ activeTab, onTabChange }) {
                     <span className="tooltip">Chats</span>
                 </button>
 
-                {/* Groups Tab - Coming Soon */}
+                {/* Groups Tab */}
                 <button
-                    className="sidebar-icon disabled"
-                    title="Groups - Coming Soon"
+                    className={`sidebar-icon ${activeTab === 'groups' ? 'active' : ''}`}
+                    onClick={() => onTabChange('groups')}
+                    title="Groups"
                 >
                     <Users />
-                    <span className="tooltip">
-                        Groups
-                        <span className="tooltip-badge">Soon</span>
-                    </span>
+                    <span className="tooltip">Groups</span>
                 </button>
 
                 {/* Settings Tab */}

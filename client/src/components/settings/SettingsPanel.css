@@ -10,8 +10,8 @@
 
 /* Settings Sidebar */
 .main-settings-sidebar {
-    width: 280px;
-    min-width: 280px;
+    width: 320px;
+    min-width: 320px;
     height: 100%;
     background: var(--bg-dark);
     border-right: 1px solid var(--border-glass);

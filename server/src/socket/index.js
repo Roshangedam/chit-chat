@@ -10,6 +10,7 @@ const { addUserSocket, removeUserSocket, getAllOnlineUsers, getUserSockets, isUs
 const { registerUserHandlers } = require('./handlers/userHandler');
 const { registerMessageHandlers } = require('./handlers/messageHandler');
 const { registerReactionHandlers } = require('./handlers/reactionHandler');
+const { registerGroupHandlers } = require('./handlers/groupHandler');
 const pushService = require('../services/pushService');
 
 /**
@@ -112,6 +113,7 @@ function initializeSocket(server) {
         registerUserHandlers(socket, io);
         registerMessageHandlers(socket, io);
         registerReactionHandlers(socket, io);
+        registerGroupHandlers(socket, io);
 
         // Push notification handlers
         socket.on('push:getVapidKey', (callback) => {

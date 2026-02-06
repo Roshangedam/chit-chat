@@ -5,9 +5,13 @@
 import { useState, useEffect } from 'react';
 import socket from './socket';
 import useUserStore from './store/userStore';
+import usePeerStore from './store/peerStore';
+import useGroupStore from './store/groupStore';
 import Sidebar from './components/Sidebar';
 import PeerList from './components/PeerList';
+import GroupList from './components/GroupList';
 import ChatWindow from './components/ChatWindow';
+import GroupChatWindow from './components/GroupChatWindow';
 import SettingsPanel from './components/settings/SettingsPanel';
 import { ToastContainer } from './components/Toast';
 import NotificationPermission from './components/NotificationPermission';
@@ -15,9 +19,11 @@ import './App.css';
 
 function App() {
     const { currentUser, isLoading } = useUserStore();
+    const selectedPeer = usePeerStore((state) => state.selectedPeer);
+    const selectedGroup = useGroupStore((state) => state.selectedGroup);
     const [isConnected, setIsConnected] = useState(socket.connected);
     const [connectionError, setConnectionError] = useState(null);
-    const [activeTab, setActiveTab] = useState('chats'); // 'chats' | 'settings'
+    const [activeTab, setActiveTab] = useState('chats'); // 'chats' | 'groups' | 'settings'
     const [settingsCategory, setSettingsCategory] = useState('profile');
 
     // Handle tab change with optional settings category
@@ -96,17 +102,30 @@ function App() {
         switch (activeTab) {
             case 'settings':
                 return <SettingsPanel onBack={() => setActiveTab('chats')} initialCategory={settingsCategory} />;
+            case 'groups':
+                return <GroupList />;
             case 'chats':
             default:
                 return <PeerList />;
         }
     };
 
+    // Render chat window (individual or group)
+    const renderChatWindow = () => {
+        if (selectedGroup) {
+            return <GroupChatWindow />;
+        }
+        return <ChatWindow />;
+    };
+
+    // Show chat window only when in chats or groups tab
+    const shouldShowChatWindow = activeTab === 'chats' || activeTab === 'groups';
+
     return (
         <div className="app chat-app">
             <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
             {renderContent()}
-            {activeTab === 'chats' && <ChatWindow />}
+            {shouldShowChatWindow && renderChatWindow()}
             <ToastContainer />
             <NotificationPermission />
         </div>
@@ -114,4 +133,5 @@ function App() {
 }
 
 export default App;
+
 

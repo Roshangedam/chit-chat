@@ -187,6 +187,135 @@ function initializeSchema() {
   `);
   console.log('  ✓ Push subscriptions table ready');
 
+  // ============================================================
+  // PHASE 5: GROUP TABLES
+  // ============================================================
+
+  // Groups table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS groups (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      avatar TEXT,
+      type TEXT DEFAULT 'group',
+      invite_link TEXT UNIQUE,
+      created_by TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    )
+  `);
+  console.log('  ✓ Groups table ready');
+
+  // Group Members table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS group_members (
+      group_id TEXT,
+      user_id TEXT,
+      role TEXT DEFAULT 'member',
+      nickname TEXT,
+      joined_at TEXT DEFAULT (datetime('now')),
+      added_by TEXT,
+      PRIMARY KEY (group_id, user_id),
+      FOREIGN KEY (group_id) REFERENCES groups(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+  console.log('  ✓ Group members table ready');
+
+  // Group Settings table (Admin controls)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS group_settings (
+      group_id TEXT PRIMARY KEY,
+      who_can_send TEXT DEFAULT 'all',
+      who_can_send_media TEXT DEFAULT 'all',
+      who_can_add_members TEXT DEFAULT 'all',
+      who_can_edit_info TEXT DEFAULT 'admins',
+      is_locked INTEGER DEFAULT 0,
+      require_approval INTEGER DEFAULT 0,
+      FOREIGN KEY (group_id) REFERENCES groups(id)
+    )
+  `);
+  console.log('  ✓ Group settings table ready');
+
+  // Member Permissions table (Individual member controls)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS member_permissions (
+      group_id TEXT,
+      user_id TEXT,
+      can_send_message INTEGER DEFAULT 1,
+      can_send_media INTEGER DEFAULT 1,
+      can_add_members INTEGER DEFAULT 1,
+      is_muted INTEGER DEFAULT 0,
+      muted_until TEXT,
+      muted_reason TEXT,
+      muted_by TEXT,
+      muted_at TEXT,
+      PRIMARY KEY (group_id, user_id),
+      FOREIGN KEY (group_id) REFERENCES groups(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+  console.log('  ✓ Member permissions table ready');
+
+  // Mute History table (Audit trail)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS mute_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      group_id TEXT,
+      user_id TEXT,
+      action TEXT,
+      duration TEXT,
+      reason TEXT,
+      performed_by TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  console.log('  ✓ Mute history table ready');
+
+  // Appeal Requests table (Muted users can appeal)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS appeal_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      group_id TEXT,
+      user_id TEXT,
+      message TEXT,
+      status TEXT DEFAULT 'pending',
+      reviewed_by TEXT,
+      review_note TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      reviewed_at TEXT
+    )
+  `);
+  console.log('  ✓ Appeal requests table ready');
+
+  // Permission Logs table (Audit trail)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS permission_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      group_id TEXT,
+      user_id TEXT,
+      change_type TEXT,
+      old_value TEXT,
+      new_value TEXT,
+      changed_by TEXT,
+      reason TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  console.log('  ✓ Permission logs table ready');
+
+  // Group indexes for performance
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_group_members_group ON group_members(group_id);
+    CREATE INDEX IF NOT EXISTS idx_group_members_user ON group_members(user_id);
+    CREATE INDEX IF NOT EXISTS idx_messages_group ON messages(group_id);
+    CREATE INDEX IF NOT EXISTS idx_mute_history_group ON mute_history(group_id);
+    CREATE INDEX IF NOT EXISTS idx_appeal_requests_group ON appeal_requests(group_id);
+    CREATE INDEX IF NOT EXISTS idx_permission_logs_group ON permission_logs(group_id);
+  `);
+  console.log('  ✓ Group indexes created');
+
   // Migration: Add is_forwarded column if it doesn't exist
   try {
     db.exec(`ALTER TABLE messages ADD COLUMN is_forwarded INTEGER DEFAULT 0`);

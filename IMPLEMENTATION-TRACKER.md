@@ -2758,3 +2758,1545 @@ Before moving to Phase 4, ALL of these must work:
 
 ### 🎉 BONUS PHASE 3.7 COMPLETE!
 
+---
+
+## 👥 Phase 5: Groups & Channels (WhatsApp-style)
+
+> **Goal:** Implement full-featured group chat with admin hierarchy, member permissions, and broadcast channels - exactly like WhatsApp.
+
+> **Note:** Phase 4 (Voice & Video) is intentionally skipped for now.
+
+### Overview
+| Feature | Tasks | Status |
+|---------|-------|--------|
+| 5.1 Database & Core Setup | 9 tasks | [x] Complete |
+| 5.2 Group Creation & Management | 8 tasks | [x] Complete |
+| 5.3 Member Management | 10 tasks | [x] Complete |
+| 5.4 Group Messaging | 12 tasks | [x] Complete |
+| 5.5 Group Settings & Permissions | 8 tasks | [x] Complete |
+| 5.6 Client UI Components | 15 tasks | [x] Complete |
+| 5.7 Advanced Features | 12 tasks | [ ] Not Started |
+
+---
+
+### 5.1 Database & Core Setup
+
+#### Task 5.1.1: Create Groups Table
+**Dependencies:** None
+**Files to modify:**
+- `server/src/db/schema.js`
+
+**Steps:**
+- [x] Add `groups` table creation:
+  - id TEXT PRIMARY KEY (UUID)
+  - name TEXT NOT NULL
+  - description TEXT
+  - avatar TEXT
+  - type TEXT DEFAULT 'group' ('group' or 'broadcast')
+  - invite_link TEXT UNIQUE
+  - created_by TEXT NOT NULL (FK to users)
+  - created_at TEXT DEFAULT datetime('now')
+- [x] Add index on created_by
+- [x] Add index on invite_link
+
+**Verify:**
+```sql
+-- Table exists with all columns
+SELECT * FROM groups LIMIT 1;
+```
+
+---
+
+#### Task 5.1.2: Create Group Members Table
+**Dependencies:** Task 5.1.1
+**Files to modify:**
+- `server/src/db/schema.js`
+
+**Steps:**
+- [x] Add `group_members` table creation:
+  - group_id TEXT (FK to groups)
+  - user_id TEXT (FK to users)
+  - role TEXT DEFAULT 'member' ('creator', 'admin', 'member')
+  - nickname TEXT (optional)
+  - joined_at TEXT DEFAULT datetime('now')
+  - added_by TEXT (FK to users)
+  - PRIMARY KEY (group_id, user_id)
+- [x] Add index on user_id
+- [x] Add index on group_id
+
+**Verify:**
+```sql
+-- Table exists with correct structure
+PRAGMA table_info(group_members);
+```
+
+---
+
+#### Task 5.1.3: Create Group Settings Table
+**Dependencies:** Task 5.1.1
+**Files to modify:**
+- `server/src/db/schema.js`
+
+**Steps:**
+- [x] Add `group_settings` table creation:
+  - group_id TEXT PRIMARY KEY (FK to groups)
+  - who_can_send TEXT DEFAULT 'all' ('all' or 'admins')
+  - who_can_send_media TEXT DEFAULT 'all'
+  - who_can_add_members TEXT DEFAULT 'all'
+  - who_can_edit_info TEXT DEFAULT 'admins'
+  - is_locked INTEGER DEFAULT 0
+  - require_approval INTEGER DEFAULT 0
+
+**Verify:**
+- [ ] Table exists with all columns
+
+---
+
+#### Task 5.1.4: Create Member Permissions Table
+**Dependencies:** Task 5.1.2
+**Files to modify:**
+- `server/src/db/schema.js`
+
+**Steps:**
+- [x] Add `member_permissions` table creation:
+  - group_id TEXT
+  - user_id TEXT
+  - can_send_message INTEGER DEFAULT 1
+  - can_send_media INTEGER DEFAULT 1
+  - can_add_members INTEGER DEFAULT 1
+  - is_muted INTEGER DEFAULT 0
+  - muted_until TEXT (NULL = forever)
+  - muted_reason TEXT
+  - muted_by TEXT
+  - muted_at TEXT
+  - PRIMARY KEY (group_id, user_id)
+- [x] Add foreign keys
+
+**Verify:**
+- [ ] Table exists with correct structure
+
+---
+
+#### Task 5.1.5: Create Mute History Table
+**Dependencies:** Task 5.1.4
+**Files to modify:**
+- `server/src/db/schema.js`
+
+**Steps:**
+- [x] Add `mute_history` table for audit trail:
+  - id INTEGER PRIMARY KEY AUTOINCREMENT
+  - group_id TEXT
+  - user_id TEXT
+  - action TEXT ('muted', 'unmuted', 'extended')
+  - duration TEXT ('1h', '1d', '1w', 'forever')
+  - reason TEXT
+  - performed_by TEXT
+  - created_at TEXT DEFAULT datetime('now')
+
+**Verify:**
+- [x] Table exists
+
+---
+
+#### Task 5.1.5a: Create Appeal Requests Table
+**Dependencies:** Task 5.1.5
+**Files to modify:**
+- `server/src/db/schema.js`
+
+**Steps:**
+- [x] Add `appeal_requests` table for muted user appeals:
+  - id INTEGER PRIMARY KEY AUTOINCREMENT
+  - group_id TEXT
+  - user_id TEXT (who is appealing)
+  - message TEXT (appeal reason)
+  - status TEXT DEFAULT 'pending' ('pending', 'approved', 'rejected')
+  - reviewed_by TEXT (admin who reviewed)
+  - review_note TEXT (admin's response)
+  - created_at TEXT DEFAULT datetime('now')
+  - reviewed_at TEXT
+
+**Verify:**
+- [x] Table exists with correct structure
+
+---
+
+#### Task 5.1.5b: Create Permission Logs Table
+**Dependencies:** Task 5.1.5a
+**Files to modify:**
+- `server/src/db/schema.js`
+
+**Steps:**
+- [x] Add `permission_logs` table for audit trail:
+  - id INTEGER PRIMARY KEY AUTOINCREMENT
+  - group_id TEXT
+  - user_id TEXT
+  - change_type TEXT ('mute', 'unmute', 'block_media', 'make_admin', etc.)
+  - old_value TEXT
+  - new_value TEXT
+  - changed_by TEXT
+  - reason TEXT
+  - created_at TEXT DEFAULT datetime('now')
+
+**Verify:**
+- [x] Table exists with correct structure
+
+---
+
+#### Task 5.1.6: Update Messages Table for Groups
+**Dependencies:** Task 5.1.1
+**Files to modify:**
+- `server/src/db/schema.js`
+
+**Steps:**
+- [x] Verify `group_id` column exists in messages table (already in schema)
+- [x] Add index on group_id if not exists: `CREATE INDEX IF NOT EXISTS idx_messages_group ON messages(group_id)`
+
+**Verify:**
+```sql
+-- Index exists
+SELECT * FROM sqlite_master WHERE type='index' AND name='idx_messages_group';
+```
+
+---
+
+#### Task 5.1.7: Create Group Queries File
+**Dependencies:** Tasks 5.1.1-5.1.6
+**Files to create:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [x] Create file with JSDoc header
+- [x] Import database connection
+- [x] Add placeholder functions (to be implemented in later tasks):
+  - `createGroup()`
+  - `findGroupById()`
+  - `updateGroup()`
+  - `deleteGroup()`
+  - `getGroupMembers()`
+  - `addGroupMember()`
+  - `removeGroupMember()`
+  - `updateMemberRole()`
+  - `getGroupSettings()`
+  - `updateGroupSettings()`
+  - `getUserGroups()`
+- [x] Export all functions
+
+**Verify:**
+- [x] File exists with proper structure
+- [x] No import errors on server start
+
+---
+
+### 5.2 Group Creation & Management
+
+#### Task 5.2.1: Implement createGroup Function
+**Dependencies:** Task 5.1.7
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Generate UUID for group id
+- [ ] Generate unique invite link code (8 chars alphanumeric)
+- [ ] Insert into groups table
+- [ ] Insert creator into group_members with role='creator'
+- [ ] Create default group_settings entry
+- [ ] Return created group object
+
+**Function Signature:**
+```javascript
+function createGroup(creatorId, { name, description, avatar, type = 'group' })
+```
+
+**Verify:**
+- [ ] Group created in database
+- [ ] Creator is member with role 'creator'
+- [ ] Settings row created
+
+---
+
+#### Task 5.2.2: Implement findGroupById Function
+**Dependencies:** Task 5.2.1
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Query group by id
+- [ ] Join with group_settings
+- [ ] Return null if not found
+
+**Verify:**
+- [ ] Returns correct group data
+
+---
+
+#### Task 5.2.3: Implement updateGroup Function
+**Dependencies:** Task 5.2.2
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Accept groupId and updates object
+- [ ] Update name, description, avatar as provided
+- [ ] Return updated group
+
+**Verify:**
+- [ ] Updates save correctly
+
+---
+
+#### Task 5.2.4: Implement deleteGroup Function
+**Dependencies:** Task 5.2.2
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Delete from group_members
+- [ ] Delete from group_settings
+- [ ] Delete from member_permissions
+- [ ] Delete from groups
+- [ ] Optionally: mark group messages as deleted
+
+**Verify:**
+- [ ] All related data deleted
+
+---
+
+#### Task 5.2.5: Implement getUserGroups Function
+**Dependencies:** Task 5.2.2
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Query all groups where user is a member
+- [ ] Include user's role in each group
+- [ ] Include member count
+- [ ] Include last message preview (same pattern as getAllUsersWithLastChat)
+- [ ] Order by last message time
+
+**Verify:**
+- [ ] Returns user's groups with correct data
+
+---
+
+#### Task 5.2.6: Implement findGroupByInviteLink Function
+**Dependencies:** Task 5.2.2
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Query group by invite_link code
+- [ ] Return group or null
+
+**Verify:**
+- [ ] Correct group found by link
+
+---
+
+#### Task 5.2.7: Implement regenerateInviteLink Function
+**Dependencies:** Task 5.2.2
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Generate new unique invite link
+- [ ] Update group record
+- [ ] Return new link
+
+**Verify:**
+- [ ] Old link invalid, new link works
+
+---
+
+#### Task 5.2.8: Create Group Socket Handler
+**Dependencies:** Tasks 5.2.1-5.2.7
+**Files to create:**
+- `server/src/socket/handlers/groupHandler.js`
+
+**Steps:**
+- [ ] Create file with JSDoc header
+- [ ] Import groupQueries
+- [ ] Create `registerGroupHandlers(socket, io)` function
+- [ ] Add socket event handlers:
+  - `group:create` - Create new group
+  - `group:update` - Update group info
+  - `group:delete` - Delete group
+  - `group:getList` - Get user's groups
+  - `group:getDetails` - Get single group details
+  - `group:regenerateLink` - Regenerate invite link
+- [ ] Register handlers in `socket/index.js`
+
+**Verify:**
+- [ ] Events handled correctly
+- [ ] Proper error handling
+
+---
+
+### 5.3 Member Management
+
+#### Task 5.3.1: Implement getGroupMembers Function
+**Dependencies:** Task 5.1.7
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Query all members for a group
+- [ ] Join with users table for user info
+- [ ] Include role, joined_at, added_by
+- [ ] Order: creator first, then admins, then members (by name)
+
+**Verify:**
+- [ ] Returns members with correct order
+
+---
+
+#### Task 5.3.2: Implement addGroupMember Function
+**Dependencies:** Task 5.3.1
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Check if user already a member
+- [ ] Insert into group_members
+- [ ] Create default member_permissions entry
+- [ ] Return added member info
+
+**Verify:**
+- [ ] Member added correctly
+
+---
+
+#### Task 5.3.3: Implement removeGroupMember Function
+**Dependencies:** Task 5.3.1
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Prevent removing creator
+- [ ] Delete from group_members
+- [ ] Delete from member_permissions
+- [ ] Return success/failure
+
+**Verify:**
+- [ ] Member removed correctly
+- [ ] Creator cannot be removed
+
+---
+
+#### Task 5.3.4: Implement updateMemberRole Function
+**Dependencies:** Task 5.3.1
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Update role in group_members
+- [ ] Valid roles: 'admin', 'member' (cannot change 'creator')
+- [ ] Return updated member
+
+**Verify:**
+- [ ] Role changes correctly
+- [ ] Creator role protected
+
+---
+
+#### Task 5.3.5: Implement Permission Check Functions
+**Dependencies:** Task 5.3.1
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] `isGroupAdmin(groupId, userId)` - Check if user is admin or creator
+- [ ] `isGroupCreator(groupId, userId)` - Check if user is creator
+- [ ] `isGroupMember(groupId, userId)` - Check if user is any member
+- [ ] `canUserSendMessage(groupId, userId)` - Check messaging permission
+- [ ] `canUserSendMedia(groupId, userId)` - Check media permission
+- [ ] `canUserAddMembers(groupId, userId)` - Check add permission
+
+**Verify:**
+- [ ] All checks work correctly
+
+---
+
+#### Task 5.3.6: Add Member Management Socket Events
+**Dependencies:** Tasks 5.3.1-5.3.5
+**Files to modify:**
+- `server/src/socket/handlers/groupHandler.js`
+
+**Steps:**
+- [ ] `group:addMember` - Add member(s) to group
+- [ ] `group:removeMember` - Remove member from group
+- [ ] `group:makeAdmin` - Promote member to admin
+- [ ] `group:dismissAdmin` - Demote admin to member
+- [ ] `group:leave` - Leave group
+- [ ] Broadcast changes to all group members using socket rooms
+
+**Verify:**
+- [ ] All events work correctly
+- [ ] Real-time updates to all members
+
+---
+
+#### Task 5.3.7: Implement Socket Rooms for Groups
+**Dependencies:** Task 5.3.6
+**Files to modify:**
+- `server/src/socket/index.js`
+- `server/src/socket/handlers/groupHandler.js`
+
+**Steps:**
+- [ ] On user connect, join all their group rooms: `socket.join(groupId)`
+- [ ] On group join, add to room: `socket.join(groupId)`
+- [ ] On group leave, leave room: `socket.leave(groupId)`
+- [ ] Use `io.to(groupId).emit()` for group broadcasts
+
+**Verify:**
+- [ ] Users automatically join group rooms on connect
+- [ ] Room-based messaging works
+
+---
+
+#### Task 5.3.8: Handle Group Invites via Link
+**Dependencies:** Task 5.2.6
+**Files to modify:**
+- `server/src/socket/handlers/groupHandler.js`
+
+**Steps:**
+- [ ] `group:joinViaLink` - Join group using invite link
+- [ ] Validate link exists
+- [ ] Check if require_approval setting
+- [ ] Add member or create pending request
+
+**Verify:**
+- [ ] Can join group via link
+
+---
+
+#### Task 5.3.9: Implement Member Muting Functions
+**Dependencies:** Task 5.1.4
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] `muteGroupMember(groupId, userId, { duration, reason, mutedBy })`
+- [ ] Calculate muted_until based on duration
+- [ ] Update member_permissions
+- [ ] Insert into mute_history
+- [ ] `unmuteGroupMember(groupId, userId, unmutedBy)`
+- [ ] Update member_permissions
+- [ ] Insert into mute_history
+- [ ] `getMutedMembers(groupId)` - List all muted members
+
+**Verify:**
+- [ ] Muting works with duration
+- [ ] History logged
+
+---
+
+#### Task 5.3.10: Add Mute Socket Events
+**Dependencies:** Task 5.3.9
+**Files to modify:**
+- `server/src/socket/handlers/groupHandler.js`
+
+**Steps:**
+- [ ] `group:muteMember` - Mute a member
+- [ ] `group:unmuteMember` - Unmute a member
+- [ ] Notify muted user
+- [ ] Broadcast mute status to group
+
+**Verify:**
+- [ ] Muting works in real-time
+
+---
+
+### 5.4 Group Messaging
+
+#### Task 5.4.1: Update saveMessage for Groups
+**Dependencies:** Task 5.1.6
+**Files to modify:**
+- `server/src/db/messageQueries.js`
+
+**Steps:**
+- [ ] Modify saveMessage to accept optional `groupId` parameter
+- [ ] If groupId provided, set receiver_id to NULL
+- [ ] Return message with group_id
+
+**Verify:**
+- [ ] Group messages save correctly
+
+---
+
+#### Task 5.4.2: Implement getGroupMessages Function
+**Dependencies:** Task 5.4.1
+**Files to modify:**
+- `server/src/db/messageQueries.js`
+
+**Steps:**
+- [ ] Create `getGroupMessages(groupId, limit, offset)`
+- [ ] Query messages where group_id matches
+- [ ] Join with users for sender info
+- [ ] Include reactions
+- [ ] Filter deleted messages
+- [ ] Order by created_at DESC
+
+**Verify:**
+- [ ] Returns correct group messages
+
+---
+
+#### Task 5.4.3: Implement Group Message Status Tracking
+**Dependencies:** Task 5.4.2
+**Files to modify:**
+- `server/src/db/messageQueries.js`
+
+**Steps:**
+- [ ] Create `getGroupMessageReadStatus(messageId)`
+- [ ] Query message_status for all group members
+- [ ] Return { delivered: [userIds], read: [userIds] }
+- [ ] Create `markGroupMessageDelivered(messageId, userId)`
+- [ ] Create `markGroupMessageRead(messageId, userId)`
+
+**Verify:**
+- [ ] Status tracking works for group messages
+
+---
+
+#### Task 5.4.4: Add Group Message Socket Events
+**Dependencies:** Tasks 5.4.1-5.4.3
+**Files to modify:**
+- `server/src/socket/handlers/messageHandler.js`
+
+**Steps:**
+- [ ] Update `message:send` to handle groupId
+- [ ] Check user's send permission before saving
+- [ ] Broadcast to group room: `io.to(groupId).emit('message:new', ...)`
+- [ ] Handle `group:messages:fetch` for loading history
+- [ ] Handle `group:messages:older` for pagination
+
+**Verify:**
+- [ ] Group messages send and receive correctly
+
+---
+
+#### Task 5.4.5: Group Message Delivery Tracking
+**Dependencies:** Task 5.4.3
+**Files to modify:**
+- `server/src/socket/handlers/messageHandler.js`
+
+**Steps:**
+- [ ] On message received by group member, mark as delivered
+- [ ] Emit `message:delivered` to sender with recipient list
+- [ ] Handle `message:read` for group messages
+- [ ] Emit `message:readBy` with reader info
+
+**Verify:**
+- [ ] Delivery/read status updates correctly
+
+---
+
+#### Task 5.4.6: Group Typing Indicators
+**Dependencies:** Task 5.4.4
+**Files to modify:**
+- `server/src/socket/handlers/messageHandler.js`
+
+**Steps:**
+- [ ] Update `typing:start` to handle groupId
+- [ ] Broadcast to group room with typer's name
+- [ ] Update `typing:stop` for groups
+
+**Verify:**
+- [ ] Typing shows for all group members
+
+---
+
+#### Task 5.4.7: Group Message Reactions
+**Dependencies:** Task 5.4.4
+**Files to modify:**
+- `server/src/socket/handlers/reactionHandler.js`
+
+**Steps:**
+- [ ] Update reaction handlers to work with group messages
+- [ ] Broadcast reaction updates to group room
+
+**Verify:**
+- [ ] Reactions work in groups
+
+---
+
+#### Task 5.4.8: Group Message Edit/Delete
+**Dependencies:** Task 5.4.4
+**Files to modify:**
+- `server/src/socket/handlers/messageHandler.js`
+
+**Steps:**
+- [ ] Update `message:edit` to handle group messages
+- [ ] Update `message:delete` to handle group messages
+- [ ] Admin can delete any message in group
+- [ ] Broadcast changes to group room
+
+**Verify:**
+- [ ] Edit/delete works in groups
+
+---
+
+#### Task 5.4.9: Group Message Reply
+**Dependencies:** Task 5.4.4
+**Files to modify:**
+- `server/src/socket/handlers/messageHandler.js`
+
+**Steps:**
+- [ ] Reply functionality already supports reply_to
+- [ ] Ensure reply works correctly in group context
+- [ ] Show original sender name in reply preview
+
+**Verify:**
+- [ ] Replies work in groups
+
+---
+
+#### Task 5.4.10: Group Message Forward
+**Dependencies:** Task 5.4.4
+**Files to modify:**
+- `server/src/socket/handlers/messageHandler.js`
+
+**Steps:**
+- [ ] Update `message:forward` to support forwarding to groups
+- [ ] Check user's group permission before forwarding
+
+**Verify:**
+- [ ] Can forward messages to groups
+
+---
+
+#### Task 5.4.11: Group Message Pin
+**Dependencies:** Task 5.4.4
+**Files to modify:**
+- `server/src/db/messageQueries.js`
+- `server/src/socket/handlers/messageHandler.js`
+
+**Steps:**
+- [ ] Update pin functions to work with group messages
+- [ ] Only admins can pin in groups
+- [ ] `getPinnedGroupMessages(groupId)`
+
+**Verify:**
+- [ ] Pinning works in groups
+
+---
+
+#### Task 5.4.12: Group Message Search
+**Dependencies:** Task 5.4.2
+**Files to modify:**
+- `server/src/db/messageQueries.js`
+
+**Steps:**
+- [ ] Create `searchGroupMessages(groupId, query, limit)`
+- [ ] Search by content
+- [ ] Return matching messages
+
+**Verify:**
+- [ ] Search works in groups
+
+---
+
+### 5.5 Group Settings & Permissions
+
+#### Task 5.5.1: Implement getGroupSettings Function
+**Dependencies:** Task 5.1.3
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Query group_settings by group_id
+- [ ] Return settings object
+
+**Verify:**
+- [ ] Returns correct settings
+
+---
+
+#### Task 5.5.2: Implement updateGroupSettings Function
+**Dependencies:** Task 5.5.1
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Accept groupId and settings object
+- [ ] Update matching columns
+- [ ] Return updated settings
+
+**Verify:**
+- [ ] Settings update correctly
+
+---
+
+#### Task 5.5.3: Add Settings Socket Events
+**Dependencies:** Tasks 5.5.1-5.5.2
+**Files to modify:**
+- `server/src/socket/handlers/groupHandler.js`
+
+**Steps:**
+- [ ] `group:getSettings` - Get group settings
+- [ ] `group:updateSettings` - Update settings (admin only)
+- [ ] `group:lockGroup` - Toggle lock status
+- [ ] Broadcast settings changes to group
+
+**Verify:**
+- [ ] Settings management works
+
+---
+
+#### Task 5.5.4: Implement Member Permission Functions
+**Dependencies:** Task 5.1.4
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] `getMemberPermissions(groupId, userId)`
+- [ ] `updateMemberPermissions(groupId, userId, permissions)`
+- [ ] Handle can_send_message, can_send_media, can_add_members
+
+**Verify:**
+- [ ] Individual permissions work
+
+---
+
+#### Task 5.5.5: Add Permission Socket Events
+**Dependencies:** Task 5.5.4
+**Files to modify:**
+- `server/src/socket/handlers/groupHandler.js`
+
+**Steps:**
+- [ ] `group:getMemberPermissions` - Get member's permissions
+- [ ] `group:updateMemberPermissions` - Update permissions (admin only)
+- [ ] Notify affected user
+
+**Verify:**
+- [ ] Permission updates work
+
+---
+
+#### Task 5.5.6: Enforce Permissions in Message Handlers
+**Dependencies:** Tasks 5.5.1-5.5.5
+**Files to modify:**
+- `server/src/socket/handlers/messageHandler.js`
+
+**Steps:**
+- [ ] Before saving group message, check:
+  - Is user a member?
+  - Is user muted?
+  - Can user send messages (group setting + individual permission)?
+  - Can user send media (if media message)?
+- [ ] Return error if permission denied
+
+**Verify:**
+- [ ] Permissions enforced correctly
+
+---
+
+#### Task 5.5.7: Auto-Unmute Scheduled Task
+**Dependencies:** Task 5.3.9
+**Files to create:**
+- `server/src/services/scheduledTasks.js`
+
+**Steps:**
+- [ ] Check for expired mutes every minute
+- [ ] Unmute users where muted_until < now()
+- [ ] Notify unmuted users
+
+**Verify:**
+- [ ] Auto-unmute works
+
+---
+
+#### Task 5.5.8: Create Permission Audit Log
+**Dependencies:** Task 5.5.5
+**Files to modify:**
+- `server/src/db/schema.js`
+- `server/src/db/groupQueries.js`
+
+**Steps:**
+- [ ] Create `permission_logs` table if not exists
+- [ ] Log all permission changes
+- [ ] `getPermissionLogs(groupId, limit)`
+
+**Verify:**
+- [ ] All changes logged
+
+---
+
+### 5.6 Client UI Components
+
+#### Task 5.6.1: Create Group Store
+**Dependencies:** None
+**Files to create:**
+- `client/src/store/groupStore.js`
+
+**Steps:**
+- [ ] Create Zustand store with:
+  - `groups: []` - List of user's groups
+  - `selectedGroup: null` - Currently open group
+  - `setGroups(groups)`
+  - `addGroup(group)`
+  - `updateGroup(groupId, updates)`
+  - `removeGroup(groupId)`
+  - `selectGroup(group)`
+  - `clearSelectedGroup()`
+  - Unread count per group
+
+**Verify:**
+- [ ] Store works correctly
+
+---
+
+#### Task 5.6.2: Create Group Socket Events (Client)
+**Dependencies:** Task 5.6.1
+**Files to modify:**
+- `client/src/socket.js`
+
+**Steps:**
+- [ ] Add handlers for:
+  - `groups:list` - Update group list
+  - `group:created` - Add new group
+  - `group:updated` - Update group info
+  - `group:deleted` - Remove group
+  - `group:memberAdded` - Update member count
+  - `group:memberRemoved` - Update member count
+  - `group:message:new` - New group message
+  - `group:settings:updated` - Settings changed
+
+**Verify:**
+- [ ] All events handled correctly
+
+---
+
+#### Task 5.6.3: Unified Chat List (WhatsApp-style)
+**Dependencies:** Task 5.6.1
+**Files to modify:**
+- `client/src/components/PeerList.jsx`
+- `client/src/components/PeerList.css`
+- `client/src/store/peerStore.js`
+
+> **WhatsApp Style:** Groups and individual chats appear in the SAME list, sorted by most recent message. No separate tabs!
+
+**Layout:**
+```
+┌─────────────────────────────────┐
+│ 💬 Chats          [➕ New Group] │
+├─────────────────────────────────┤
+│ All (15) | Online (5) | Groups  │
+├─────────────────────────────────┤
+│ 🔍 Search                       │
+├─────────────────────────────────┤
+│ 👥 Office Team          2m ago  │  ← Group (with group icon)
+│    John: Meeting at 3pm    (3)  │  ← Unread badge
+├─────────────────────────────────┤
+│ 👤 Alice                  5m ago│  ← Individual chat
+│    ✓✓ You: Thanks!              │
+├─────────────────────────────────┤
+│ 👥 Family Group         10m ago │  ← Group
+│    Dad: See you tomorrow        │
+├─────────────────────────────────┤
+│ 👤 Bob                   1h ago │  ← Individual chat
+│    📷 Image                     │
+└─────────────────────────────────┘
+```
+
+**Steps:**
+- [ ] Merge groups into peerStore OR create unified chatStore
+- [ ] Add `isGroup` flag to differentiate groups from users
+- [ ] Combine users + groups in single list
+- [ ] Sort by `last_message_time` (most recent first)
+- [ ] Show group icon (👥) for groups, user avatar for individuals
+- [ ] Show member count for groups on hover/subtitle
+- [ ] Add "Groups" filter tab alongside "All", "Online", "Offline"
+- [ ] Show unread badge for groups (same style as users)
+- [ ] Add "➕ New Group" button in header
+- [ ] Click on group opens GroupChatWindow
+- [ ] Click on user opens ChatWindow (existing)
+
+**Verify:**
+- [ ] Groups and users appear in same list
+- [ ] Sorted by most recent message
+- [ ] Unread count shows correctly for groups
+- [ ] Filter tabs work (All shows both, Groups shows only groups)
+
+
+---
+
+#### Task 5.6.4: Create CreateGroupModal Component
+**Dependencies:** Task 5.6.3
+**Files to create:**
+- `client/src/components/CreateGroupModal.jsx`
+- `client/src/components/CreateGroupModal.css`
+
+**Steps:**
+- [ ] Group name input (required)
+- [ ] Group description (optional)
+- [ ] Group avatar upload (optional)
+- [ ] Group type toggle (Group/Broadcast)
+- [ ] Member selection from peer list
+- [ ] Create button
+- [ ] Emit `group:create` socket event
+
+**Verify:**
+- [ ] Can create group with members
+
+---
+
+#### Task 5.6.5: Create GroupChatWindow Component
+**Dependencies:** Task 5.6.2
+**Files to create:**
+- `client/src/components/GroupChatWindow.jsx`
+- `client/src/components/GroupChatWindow.css`
+
+**Steps:**
+- [ ] Similar structure to ChatWindow
+- [ ] Header: Group avatar, name, member count
+- [ ] Message list (use existing Message component)
+- [ ] Message input with same features
+- [ ] Handle group-specific socket events
+- [ ] Show "X is typing" with name
+
+**Verify:**
+- [ ] Group chat works like 1-to-1 chat
+
+---
+
+#### Task 5.6.6: Create GroupInfoModal Component
+**Dependencies:** Task 5.6.5
+**Files to create:**
+- `client/src/components/GroupInfoModal.jsx`
+- `client/src/components/GroupInfoModal.css`
+
+**Layout:**
+```
+┌───────────────────────────────┐
+│  ✕                Group Info  │
+├───────────────────────────────┤
+│     [GROUP AVATAR (80px)]     │
+│        Group Name             │
+│     📝 Description here       │
+├───────────────────────────────┤
+│  👥 Members (12)              │
+│  ┌─────────────────────────┐  │
+│  │ 👤 Creator (You) - Admin│  │
+│  │ 👤 John Doe - Admin     │  │
+│  │ 👤 Jane Smith           │  │
+│  │ 👤 Bob Wilson           │  │
+│  │ [View All]              │  │
+│  └─────────────────────────┘  │
+├───────────────────────────────┤
+│  🔗 Invite Link               │
+│  [Copy Link] [QR Code]        │
+├───────────────────────────────┤
+│  ⚙️ Settings (Admin only)     │
+│  🚪 Leave Group               │
+│  🗑️ Delete Group (Creator)    │
+└───────────────────────────────┘
+```
+
+**Steps:**
+- [ ] Group photo (clickable for fullscreen)
+- [ ] Editable name/description (for admins)
+- [ ] Member list preview
+- [ ] Invite link with copy button
+- [ ] Settings button (admin only)
+- [ ] Leave group button
+- [ ] Delete group button (creator only)
+
+**Verify:**
+- [ ] All info displays correctly
+- [ ] Actions work
+
+---
+
+#### Task 5.6.7: Create GroupMemberList Component
+**Dependencies:** Task 5.6.6
+**Files to create:**
+- `client/src/components/GroupMemberList.jsx`
+- `client/src/components/GroupMemberList.css`
+
+**Steps:**
+- [ ] Full member list with scrolling
+- [ ] Show role badges (Creator, Admin)
+- [ ] Right-click context menu (for admins):
+  - Make Admin / Dismiss Admin
+  - Mute Member
+  - Remove from Group
+- [ ] Click to view profile
+- [ ] Add member button
+
+**Verify:**
+- [ ] Member list works with actions
+
+---
+
+#### Task 5.6.8: Create AddMemberModal Component
+**Dependencies:** Task 5.6.7
+**Files to create:**
+- `client/src/components/AddMemberModal.jsx`
+- `client/src/components/AddMemberModal.css`
+
+**Steps:**
+- [ ] Search/filter from peer list
+- [ ] Multi-select with checkboxes
+- [ ] Show already-added members as disabled
+- [ ] Add selected button
+- [ ] Emit `group:addMember` event
+
+**Verify:**
+- [ ] Can add multiple members
+
+---
+
+#### Task 5.6.9: Create GroupSettingsModal Component
+**Dependencies:** Task 5.6.6
+**Files to create:**
+- `client/src/components/GroupSettingsModal.jsx`
+- `client/src/components/GroupSettingsModal.css`
+
+**Steps:**
+- [ ] Toggle: Who can send messages (All / Admins only)
+- [ ] Toggle: Who can send media (All / Admins only)
+- [ ] Toggle: Who can add members (All / Admins only)
+- [ ] Toggle: Who can edit info (All / Admins only)
+- [ ] Toggle: Lock group
+- [ ] Save changes button
+
+**Verify:**
+- [ ] Settings update correctly
+
+---
+
+#### Task 5.6.10: Create MuteMemberModal Component
+**Dependencies:** Task 5.6.7
+**Files to create:**
+- `client/src/components/MuteMemberModal.jsx`
+- `client/src/components/MuteMemberModal.css`
+
+**Steps:**
+- [ ] Duration selector: 1 Hour, 1 Day, 1 Week, Forever
+- [ ] Reason input (optional)
+- [ ] Mute button
+- [ ] Emit `group:muteMember` event
+
+**Verify:**
+- [ ] Muting works with duration
+
+---
+
+#### Task 5.6.11: Update Sidebar (Remove Separate Groups Tab)
+**Dependencies:** Task 5.6.3
+**Files to modify:**
+- `client/src/components/Sidebar.jsx`
+- `client/src/components/Sidebar.css`
+
+> **Note:** Since we're using unified list (WhatsApp-style), Groups tab in sidebar is NOT needed.
+
+**Steps:**
+- [ ] Remove "Groups" tab from sidebar (or keep it disabled)
+- [ ] Groups are now accessible via PeerList filter
+- [ ] Show total unread badge (users + groups combined) on Chats icon
+- [ ] Update Chats icon tooltip to "Chats & Groups"
+
+**Verify:**
+- [ ] Sidebar shows only Chats, Settings (no separate Groups)
+- [ ] Total unread includes group unreads
+
+---
+
+#### Task 5.6.12: Update App.jsx for Unified List
+**Dependencies:** Tasks 5.6.3, 5.6.5
+**Files to modify:**
+- `client/src/App.jsx`
+
+**Steps:**
+- [ ] Keep single 'chats' tab (no separate 'groups' tab)
+- [ ] Check if selectedItem is group or user
+- [ ] Render GroupChatWindow when group selected (`selectedPeer.isGroup === true`)
+- [ ] Render ChatWindow when user selected (`selectedPeer.isGroup === false`)
+- [ ] Handle group selection in same flow as peer selection
+
+**Verify:**
+- [ ] Clicking group in PeerList opens GroupChatWindow
+- [ ] Clicking user in PeerList opens ChatWindow
+
+---
+
+#### Task 5.6.13: Create GroupAvatar Component
+**Dependencies:** Task 5.6.3
+**Files to create:**
+- `client/src/components/GroupAvatar.jsx`
+- `client/src/components/GroupAvatar.css`
+
+**Steps:**
+- [ ] Show group avatar image or default
+- [ ] Default: first letter of group name
+- [ ] Size variants: small, medium, large
+- [ ] Different background color for groups
+
+**Verify:**
+- [ ] Avatar displays correctly
+
+---
+
+#### Task 5.6.14: Update ForwardModal for Groups
+**Dependencies:** Task 5.6.1
+**Files to modify:**
+- `client/src/components/ForwardModal.jsx`
+
+**Steps:**
+- [ ] Add groups tab/section
+- [ ] Show user's groups as forward targets
+- [ ] Allow forwarding to groups
+
+**Verify:**
+- [ ] Can forward to groups
+
+---
+
+#### Task 5.6.15: Group Message Read Info Component
+**Dependencies:** Task 5.6.5
+**Files to create:**
+- `client/src/components/GroupMessageInfo.jsx`
+- `client/src/components/GroupMessageInfo.css`
+
+**Steps:**
+- [ ] Show who delivered/read the message
+- [ ] List with timestamps
+- [ ] Open via message context menu
+
+**Verify:**
+- [ ] Shows correct read status
+
+---
+
+### 5.7 Advanced Features
+
+#### Task 5.7.1: Implement @Mentions System
+**Dependencies:** Task 5.4.4
+**Files to modify:**
+- `server/src/db/messageQueries.js`
+- `server/src/socket/handlers/messageHandler.js`
+
+**Steps:**
+- [ ] Parse message content for @mentions
+- [ ] Store mentions in message (JSON array or separate table)
+- [ ] Send special notification to mentioned users
+- [ ] Highlight mentions in message display
+
+**Verify:**
+- [ ] @mentions notify correct users
+
+---
+
+#### Task 5.7.2: Client @Mention UI
+**Dependencies:** Task 5.7.1
+**Files to modify:**
+- `client/src/components/MessageInput.jsx`
+- `client/src/components/Message.jsx`
+
+**Steps:**
+- [ ] Detect @ typing in group chat
+- [ ] Show member dropdown for autocomplete
+- [ ] Insert @name on selection
+- [ ] Highlight @mentions in messages
+- [ ] Style own mentions differently
+
+**Verify:**
+- [ ] @mention autocomplete works
+
+---
+
+#### Task 5.7.3: Broadcast Channel Creation
+**Dependencies:** Task 5.2.1
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+- `client/src/components/CreateGroupModal.jsx`
+
+**Steps:**
+- [ ] Type='broadcast' creates channel
+- [ ] Only creator/admins can post
+- [ ] Members can read and react only
+- [ ] Show subscriber count instead of member count
+
+**Verify:**
+- [ ] Broadcast channels work
+
+---
+
+#### Task 5.7.4: Broadcast Channel UI
+**Dependencies:** Task 5.7.3
+**Files to modify:**
+- `client/src/components/GroupChatWindow.jsx`
+
+**Steps:**
+- [ ] Hide message input for non-admins
+- [ ] Show "Only admins can post" label
+- [ ] Allow reactions from all members
+- [ ] Different styling for channels
+
+**Verify:**
+- [ ] Channel UI correct
+
+---
+
+#### Task 5.7.5: Group Media Gallery
+**Dependencies:** Task 5.4.2
+**Files to modify:**
+- `client/src/components/MediaGallery.jsx`
+
+**Steps:**
+- [ ] Support groupId parameter
+- [ ] Fetch media from group messages
+- [ ] Same tabs and features as 1-to-1
+
+**Verify:**
+- [ ] Media gallery works for groups
+
+---
+
+#### Task 5.7.6: Group Notification Settings
+**Dependencies:** Task 5.6.6
+**Files to modify:**
+- `client/src/store/settingsStore.js`
+- `client/src/components/GroupInfoModal.jsx`
+
+**Steps:**
+- [ ] Add mutedGroups to settings store
+- [ ] Mute group notifications option
+- [ ] Mute duration options
+- [ ] Show muted icon in group list
+
+**Verify:**
+- [ ] Can mute/unmute group notifications
+
+---
+
+#### Task 5.7.6a: Group Push Notifications (Same as Individual)
+**Dependencies:** Task 5.4.4, Phase 3.5 (Notifications)
+**Files to modify:**
+- `client/src/socket.js`
+- `client/src/utils/notifications.js`
+- `server/src/services/pushService.js`
+
+> **Goal:** Group notifications should work EXACTLY like individual chat notifications
+
+**Steps:**
+- [ ] On `group:message:new` event, trigger notification if:
+  - User is not currently viewing that group
+  - Group is not muted
+  - Notifications are enabled
+- [ ] Show toast notification with:
+  - Group avatar/icon
+  - Group name
+  - Sender name: message preview (e.g., "John: Meeting at 3pm")
+- [ ] Show browser/Web notification (same format)
+- [ ] Play notification sound (same as individual)
+- [ ] Update browser tab title with unread count (combined users + groups)
+- [ ] Update favicon badge with total unread
+- [ ] Click notification opens that group chat
+- [ ] Server: Send push notification to offline group members
+
+**Verify:**
+- [ ] Toast shows for new group message
+- [ ] Browser notification shows with correct info
+- [ ] Sound plays for group messages
+- [ ] Notification click opens correct group
+- [ ] Offline users receive push notification
+
+---
+
+#### Task 5.7.7: Export Group Chat
+**Dependencies:** Task 5.4.2
+**Files to modify:**
+- `server/src/socket/handlers/groupHandler.js`
+- `client/src/components/GroupInfoModal.jsx`
+
+**Steps:**
+- [ ] `group:exportChat` socket event
+- [ ] Generate text/JSON file of all messages
+- [ ] Download functionality
+
+**Verify:**
+- [ ] Can export chat history
+
+---
+
+#### Task 5.7.8: Group Invite QR Code
+**Dependencies:** Task 5.6.6
+**Files to create:**
+- `client/src/components/QRCodeModal.jsx`
+
+**Steps:**
+- [ ] Install qrcode.react package
+- [ ] Generate QR for invite link
+- [ ] Display in modal
+- [ ] Download QR image option
+
+**Verify:**
+- [ ] QR code scannable and works
+
+---
+
+#### Task 5.7.9: Appeal System - Server
+**Dependencies:** Task 5.1.5a, Task 5.3.9
+**Files to modify:**
+- `server/src/db/groupQueries.js`
+- `server/src/socket/handlers/groupHandler.js`
+
+**Steps:**
+- [ ] `createAppeal(groupId, userId, message)` - Muted user submits appeal
+- [ ] `getAppeals(groupId, status)` - Get pending/all appeals for group
+- [ ] `reviewAppeal(appealId, adminId, status, note)` - Admin reviews appeal
+- [ ] `getAppealHistory(groupId, userId)` - Get user's appeal history
+- [ ] Socket event: `group:appeal:submit` - User submits appeal
+- [ ] Socket event: `group:appeal:list` - Admin gets appeal list
+- [ ] Socket event: `group:appeal:review` - Admin approves/rejects
+- [ ] Notify admin when new appeal received
+- [ ] Notify user when appeal reviewed
+
+**Verify:**
+- [ ] Muted user can submit appeal
+- [ ] Admin receives appeal notification
+- [ ] Admin can approve/reject appeal
+- [ ] Approved appeal unmutes user
+
+---
+
+#### Task 5.7.10: Appeal System - Client UI
+**Dependencies:** Task 5.7.9
+**Files to create:**
+- `client/src/components/AppealModal.jsx`
+- `client/src/components/AppealModal.css`
+- `client/src/components/AppealListModal.jsx`
+- `client/src/components/AppealListModal.css`
+
+**Steps:**
+- [ ] AppealModal: Form for muted user to submit appeal
+  - Reason textarea
+  - Submit button
+  - Show previous appeals status
+- [ ] AppealListModal: Admin view of pending appeals
+  - List of appeals with user info
+  - Appeal message
+  - Approve/Reject buttons
+  - Optional response note
+- [ ] Show "Submit Appeal" button when user is muted
+- [ ] Show appeal badge on group for admins (pending count)
+
+**Verify:**
+- [ ] Muted user sees appeal option
+- [ ] Appeal submission works
+- [ ] Admin can view and review appeals
+- [ ] UI updates after appeal review
+
+---
+
+#### Task 5.7.11: Pin Group Chat
+**Dependencies:** Task 5.6.1
+**Files to modify:**
+- `client/src/store/groupStore.js`
+- `client/src/components/GroupList.jsx`
+- `client/src/components/GroupInfoModal.jsx`
+
+**Steps:**
+- [ ] Add `pinnedGroups: []` to groupStore
+- [ ] Add pin/unpin toggle in GroupInfoModal
+- [ ] Show pinned groups at top of GroupList
+- [ ] Pin icon indicator on pinned groups
+- [ ] Persist pinned state in localStorage
+
+**Verify:**
+- [ ] Can pin/unpin groups
+- [ ] Pinned groups appear at top
+- [ ] Pin state persists across refresh
+
+---
+
+## ✅ Phase 5 Completion Checklist
+
+Before moving to Phase 6, ALL of these must work:
+
+### Core Functionality (WhatsApp-style Unified List)
+- [ ] Can create groups with name, description, avatar
+- [ ] **Groups appear in SAME list as individual chats (PeerList)**
+- [ ] **Sorted by most recent message (groups + users mixed)**
+- [ ] **"Groups" filter tab works in PeerList**
+- [ ] **Group icon differentiates groups from users**
+
+### Member Management
+- [ ] Can add members to group
+- [ ] Can remove members from group
+- [ ] Creator cannot be removed
+- [ ] Can promote member to admin
+- [ ] Can demote admin to member
+- [ ] Can leave group
+- [ ] Creator can delete group
+- [ ] Can join group via invite link
+
+### Messaging
+- [ ] Can send text messages in group
+- [ ] Messages appear for all members in real-time
+- [ ] Typing indicator shows typer's name
+- [ ] Delivery/read status works (delivered to X, read by Y)
+- [ ] Reactions work in groups
+- [ ] Edit/delete works in groups
+- [ ] Reply works in groups
+- [ ] Forward to groups works
+- [ ] Pin messages works in groups
+- [ ] Search in group works
+
+### Settings & Permissions
+- [ ] Admin can change group settings
+- [ ] "Who can send messages" works
+- [ ] "Who can add members" works
+- [ ] Lock group works
+- [ ] Can mute individual members
+- [ ] Muted members cannot send messages
+- [ ] Auto-unmute after duration works
+
+### UI Components
+- [ ] **Unified PeerList shows groups + users together**
+- [ ] GroupChatWindow displays correctly
+- [ ] GroupInfoModal shows all info
+- [ ] Member list with actions works
+- [ ] Create group flow works
+- [ ] Add member flow works
+- [ ] Settings modal works
+- [ ] Mute member modal works
+- [ ] **Unread badge shows for groups (same as users)**
+
+### Notifications (Same as Individual Chats)
+- [ ] **Toast notification for group messages**
+- [ ] **Browser/Web notification for group messages**
+- [ ] **Notification sound for group messages**
+- [ ] **Click notification opens correct group**
+- [ ] **Browser tab title shows total unread (users + groups)**
+- [ ] **Favicon badge shows total unread**
+- [ ] **Push notification for offline group members**
+
+### Advanced Features
+- [ ] @mentions autocomplete works
+- [ ] @mentioned users get notification
+- [ ] Broadcast channels work (admins only post)
+- [ ] Group media gallery works
+- [ ] Can mute group notifications
+- [ ] Export chat works
+- [ ] QR code for invite link works
+- [ ] **NEW:** Appeal system works (submit, review, approve/reject)
+- [ ] **NEW:** Can pin/unpin group chat
+
+---
+
+## 📌 Phase 5 Progress Log
+
+| Date | Task Completed | Issues/Notes |
+|------|----------------|--------------|
+| 2026-01-31 | Phase 5.1 Database & Core Setup | All 7 tables created + groupQueries.js with 40+ functions |
+| 2026-01-31 | Phase 5.2 Group Creation & Management | groupHandler.js created with CRUD socket events |
+| 2026-01-31 | Phase 5.3 Member Management | Member add/remove/role/mute handlers implemented |
+| 2026-01-31 | Phase 5.4 Group Messaging | Group message send/get/edit/delete/pin/search handlers + messageQueries.js updated |
+| 2026-01-31 | Phase 5.5 Group Settings & Permissions | Settings update, muting, permissions - all handlers complete |
+| 2026-01-31 | Phase 5.6 Client UI Components | Created groupStore, groupMessageStore, socket events, CreateGroupModal, GroupChatWindow, updated PeerList unified list |
+
+---
+
