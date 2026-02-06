@@ -15,6 +15,13 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Check if running as root (no sudo needed)
+if [ "$EUID" -eq 0 ]; then
+    SUDO=""
+else
+    SUDO="sudo"
+fi
+
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_DIR="$SCRIPT_DIR/server"
@@ -43,8 +50,8 @@ if command -v node &> /dev/null; then
     echo -e "${GREEN}✅ Node.js: $(node -v)${NC}"
 else
     echo -e "${YELLOW}📦 Installing Node.js 20.x...${NC}"
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+    curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO -E bash -
+    $SUDO apt-get install -y nodejs
     echo -e "${GREEN}✅ Node.js installed${NC}"
 fi
 
@@ -56,7 +63,7 @@ if command -v pm2 &> /dev/null; then
     echo -e "${GREEN}✅ PM2 installed${NC}"
 else
     echo -e "${YELLOW}📦 Installing PM2...${NC}"
-    sudo npm install -g pm2
+    npm install -g pm2
     echo -e "${GREEN}✅ PM2 installed${NC}"
 fi
 
@@ -68,8 +75,8 @@ if dpkg -l 2>/dev/null | grep -q build-essential; then
     echo -e "${GREEN}✅ Build tools present${NC}"
 else
     echo -e "${YELLOW}📦 Installing build-essential...${NC}"
-    sudo apt-get update
-    sudo apt-get install -y build-essential python3
+    $SUDO apt-get update
+    $SUDO apt-get install -y build-essential python3
     echo -e "${GREEN}✅ Build tools installed${NC}"
 fi
 
