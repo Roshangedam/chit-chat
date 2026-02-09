@@ -110,7 +110,14 @@ const useGroupStore = create((set, get) => ({
 
     // Settings
     setGroupSettings: (groupId, settings) => set((state) => ({
-        groupSettings: { ...state.groupSettings, [groupId]: settings }
+        groupSettings: { ...state.groupSettings, [groupId]: settings },
+        // Also update the group object's settings
+        groups: state.groups.map(g =>
+            g.id === groupId ? { ...g, settings } : g
+        ),
+        selectedGroup: state.selectedGroup?.id === groupId
+            ? { ...state.selectedGroup, settings }
+            : state.selectedGroup
     })),
 
     // Typing indicators - now stores { userId, userName }

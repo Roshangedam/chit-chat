@@ -295,25 +295,64 @@ function isCreator(groupId, userId) {
 // ============================================================
 
 /**
- * Get group settings
+ * Get group settings (with client-friendly format)
  */
 function getGroupSettings(groupId) {
   const stmt = db.prepare(`SELECT * FROM group_settings WHERE group_id = ?`);
-  return stmt.get(groupId);
+  const settings = stmt.get(groupId);
+
+  if (!settings) return null;
+
+  // Add client-friendly boolean fields
+  return {
+    ...settings,
+    // Convert to client-expected format
+    only_admins_can_post: settings.who_can_send === 'admins',
+    only_admins_can_add_members: settings.who_can_add_members === 'admins',
+    // is_locked is already 0/1 in DB, convert to boolean
+    is_locked: Boolean(settings.is_locked),
+    require_approval: Boolean(settings.require_approval)
+  };
 }
 
 /**
  * Update group settings
  */
 function updateGroupSettings(groupId, settings) {
+  // Map client field names to database column names
+  const fieldMapping = {
+    'only_admins_can_post': 'who_can_send',
+    'only_admins_can_add_members': 'who_can_add_members',
+    'is_locked': 'is_locked',
+    'require_approval': 'require_approval',
+    'who_can_send': 'who_can_send',
+    'who_can_send_media': 'who_can_send_media',
+    'who_can_add_members': 'who_can_add_members',
+    'who_can_edit_info': 'who_can_edit_info'
+  };
+
   const allowedFields = ['who_can_send', 'who_can_send_media', 'who_can_add_members', 'who_can_edit_info', 'is_locked', 'require_approval'];
   const setClauses = [];
   const values = [];
 
   for (const [key, value] of Object.entries(settings)) {
-    if (allowedFields.includes(key)) {
-      setClauses.push(`${key} = ?`);
-      values.push(value);
+    const dbField = fieldMapping[key] || key;
+
+    if (allowedFields.includes(dbField)) {
+      setClauses.push(`${dbField} = ?`);
+
+      // Convert boolean values appropriately
+      if (typeof value === 'boolean') {
+        // For is_locked and require_approval, convert to 0/1
+        if (dbField === 'is_locked' || dbField === 'require_approval') {
+          values.push(value ? 1 : 0);
+        } else {
+          // For who_can_* fields, convert boolean to 'admins' or 'all'
+          values.push(value ? 'admins' : 'all');
+        }
+      } else {
+        values.push(value);
+      }
     }
   }
 

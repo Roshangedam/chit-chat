@@ -802,7 +802,7 @@ function registerGroupHandlers(socket, io) {
                         ? (content.length > 50 ? content.substring(0, 50) + '...' : content)
                         : `[${type}]`;
 
-                    pushService.sendNotification(member.user_id, {
+                    pushService.sendPushToUser(member.user_id, {
                         title: group.name,
                         body: `${sender?.custom_name || sender?.name || 'Someone'}: ${contentPreview}`,
                         icon: group.avatar || '/icon-192.png',

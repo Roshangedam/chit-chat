@@ -22,6 +22,7 @@ function GroupChatWindow() {
     const clearSelectedGroup = useGroupStore((state) => state.clearSelectedGroup);
     const clearUnread = useGroupStore((state) => state.clearUnread);
     const setGroupMembers = useGroupStore((state) => state.setGroupMembers);
+    const setGroupSettings = useGroupStore((state) => state.setGroupSettings);
     const allGroupMembers = useGroupStore((state) => state.groupMembers);
     const allTypingUsers = useGroupStore((state) => state.typingUsers);
 
@@ -43,6 +44,26 @@ function GroupChatWindow() {
     const messages = groupId ? (allMessages[groupId] || []) : [];
     const isLoading = groupId ? (loading[groupId] || false) : false;
     const hasMore = groupId ? (hasMoreState[groupId] !== false) : false;
+
+    // Get group settings and check if user can send
+    const groupSettings = selectedGroup?.settings || {};
+    const myMember = groupMembers.find(m => m.user_id === currentUser?.id);
+    const myRole = myMember?.role || 'member';
+    const isAdmin = myRole === 'admin' || myRole === 'creator';
+
+    // Check if user can send messages
+    const canSend = (() => {
+        if (isAdmin) return true; // Admins can always send
+        if (groupSettings.is_locked) return false;
+        if (groupSettings.only_admins_can_post) return false;
+        return true;
+    })();
+
+    const disabledMessage = !canSend ? (
+        groupSettings.is_locked ? 'This group is locked. Only admins can send messages.' :
+            groupSettings.only_admins_can_post ? 'Only admins can send messages in this group.' :
+                ''
+    ) : '';
 
     // UI States
     const [showInfo, setShowInfo] = useState(false);
@@ -91,10 +112,13 @@ function GroupChatWindow() {
                 setChatLoading(false);
             });
 
-            // Fetch members
+            // Fetch members and settings
             socket.emit('group:getDetails', { groupId }, (response) => {
                 if (response.success) {
                     setGroupMembers(groupId, response.members || []);
+                    if (response.settings) {
+                        setGroupSettings(groupId, response.settings);
+                    }
                 }
             });
 
@@ -422,9 +446,7 @@ function GroupChatWindow() {
         });
     };
 
-    // Get my role
-    const myRole = groupMembers.find(m => m.user_id === currentUser?.id)?.role || 'member';
-    const isAdmin = myRole === 'admin' || myRole === 'creator';
+
 
     if (!selectedGroup) {
         return (
@@ -617,6 +639,8 @@ function GroupChatWindow() {
                 groupId={groupId}
                 onSend={handleSendMessage}
                 onTyping={handleTyping}
+                disabled={!canSend}
+                disabledMessage={disabledMessage}
             />
 
             {/* Forward Modal */}

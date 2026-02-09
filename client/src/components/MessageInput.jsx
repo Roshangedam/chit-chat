@@ -16,7 +16,7 @@ import MediaUpload from './MediaUpload';
 import AudioRecorder from './AudioRecorder';
 import './MessageInput.css';
 
-function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCancelEdit, isGroup = false, groupId, onSend, onTyping }) {
+function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCancelEdit, isGroup = false, groupId, onSend, onTyping, disabled = false, disabledMessage = '' }) {
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -656,6 +656,23 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
         usePeerStore.getState().movePeerToTop(peerId, gifUrl, currentUser.id, 'gif', 'sending');
     };
 
+    // Early return for disabled state
+    if (disabled) {
+        return (
+            <div className="message-input-container disabled">
+                <div className="message-input">
+                    <div className="disabled-input-message">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                        </svg>
+                        <span>{disabledMessage || 'You cannot send messages in this group'}</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div
             className={`message-input-container ${isDragging ? 'dragging' : ''}`}
@@ -928,3 +945,4 @@ function MessageInput({ peerId, replyingTo, onCancelReply, editingMessage, onCan
 }
 
 export default MessageInput;
+
